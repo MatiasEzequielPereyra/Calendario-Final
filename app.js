@@ -1,5 +1,5 @@
 /* =========================================================
-   QUINTA MEWEN - app.js (versión estable)
+   QUINTA MEWEN - app.js (versión final estable)
 ========================================================= */
 
 const SUPABASE_URL = 'https://vebqlbcfjxnpryjdgfvq.supabase.co';
@@ -54,7 +54,11 @@ function formatearFecha(f) {
 }
 
 function formatearMoneda(n) {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0
+  }).format(n || 0);
 }
 
 function mostrarToast(msg) {
@@ -111,7 +115,7 @@ async function cargarReservas() {
       .order(DB_DATE_COLUMN, { ascending: true });
 
     if (error) {
-      console.error(error);
+      console.error('Error cargando:', error);
       reservas = [];
     } else {
       reservas = (data || []).map(normalizarReserva);
@@ -121,6 +125,7 @@ async function cargarReservas() {
     reservas = [];
   }
 
+  // Siempre actualizar ambas vistas
   renderCalendario();
   renderLista();
 }
@@ -140,7 +145,6 @@ function renderCalendario() {
   const totalDias = new Date(anioActual, mesActual + 1, 0).getDate();
   const hoy = hoyStr();
 
-  // celdas vacías
   for (let i = 0; i < inicio; i++) {
     const vacio = document.createElement('div');
     vacio.className = 'day empty';
@@ -165,12 +169,13 @@ function renderCalendario() {
     dots.className = 'day-dots';
 
     if (esSab) {
-      // dos puntos
+      // ===== SÁBADO: dos puntos independientes =====
       const resDia = reservasDia.find(r => r.horario === '10:00-17:00');
       const resNoche = reservasDia.find(r => r.horario === '22:00-05:00');
 
       const p1 = document.createElement('span');
       p1.className = 'day-dot ' + (resDia ? 'ocupado' : 'disponible');
+      p1.title = resDia ? 'Turno Día' : 'Día disponible';
       p1.addEventListener('click', function(e) {
         e.stopPropagation();
         if (resDia) abrirModalEditar(resDia.id);
@@ -180,6 +185,7 @@ function renderCalendario() {
 
       const p2 = document.createElement('span');
       p2.className = 'day-dot ' + (resNoche ? 'ocupado' : 'disponible');
+      p2.title = resNoche ? 'Turno Noche' : 'Noche disponible';
       p2.addEventListener('click', function(e) {
         e.stopPropagation();
         if (resNoche) abrirModalEditar(resNoche.id);
@@ -187,14 +193,17 @@ function renderCalendario() {
       });
       dots.appendChild(p2);
 
+      // Click general → prioriza turno DÍA
       div.addEventListener('click', function() {
         if (resDia) abrirModalEditar(resDia.id);
         else if (resNoche) abrirModalEditar(resNoche.id);
-        else abrirModalNueva(fecha);
+        else abrirModalNueva(fecha, '10:00-17:00');
       });
+
     } else {
-      // un punto
+      // ===== RESTO DE DÍAS: un solo punto =====
       const res = reservasDia.find(r => r.horario === HORARIO_FIJO || !r.horario);
+
       const p = document.createElement('span');
       p.className = 'day-dot ' + (res ? 'ocupado' : 'disponible');
       p.addEventListener('click', function(e) {
@@ -222,19 +231,23 @@ function cambiarMes(dir) {
   renderCalendario();
 }
 
-// ---------- LISTA ----------
+// ---------- LISTA DE PRÓXIMAS RESERVAS ----------
 function renderLista() {
   const cont = document.getElementById('listaReservas');
   const contador = document.getElementById('contadorReservas');
   if (!cont) return;
 
   const hoy = parseFecha(hoyStr());
+
   const visibles = reservas
-    .filter(r => {
+    .filter(function(r) {
       const f = parseFecha(r.fecha);
       return f && hoy && f >= hoy;
     })
-    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    .sort(function(a, b) {
+      return (a.fecha || '').localeCompare(b.fecha || '') ||
+             String(a.horario || '').localeCompare(String(b.horario || ''));
+    });
 
   if (contador) contador.textContent = '(' + visibles.length + ')';
 
@@ -258,7 +271,10 @@ function renderLista() {
       badge = '<span class="badge badge-parcial">Seña pendiente</span>';
     }
 
-    const textoH = HORARIOS[r.horario] ? HORARIOS[r.horario].replace(/^☀️ |^🌙 /, '') : (r.horario || 'Sin horario');
+    const textoH = HORARIOS[r.horario]
+      ? HORARIOS[r.horario].replace(/^☀️ |^🌙 /, '')
+      : (r.horario || 'Sin horario');
+
     const icono = r.horario === '22:00-05:00' ? '🌙' : '☀️';
 
     html += '<button type="button" class="reserva-item" data-id="' + escaparHTML(r.id) + '">' +
@@ -287,12 +303,13 @@ function actualizarOpcionesHorario(fecha, seleccionado) {
 
   if (!fecha) {
     select.disabled = true;
+    if (ayuda) ayuda.textContent = '';
     return;
   }
 
   if (esSabado(fecha)) {
     select.disabled = false;
-    if (ayuda) ayuda.textContent = 'Sábado: podés elegir día o noche';
+    if (ayuda) ayuda.textContent = 'Sábado: podés tener reserva de día y de noche por separado.';
 
     for (const valor in HORARIOS) {
       const opt = document.createElement('option');
@@ -315,6 +332,7 @@ function actualizarOpcionesHorario(fecha, seleccionado) {
 
 function abrirModalNueva(fecha, horario) {
   editandoId = null;
+
   document.getElementById('modalTitulo').textContent = 'Nueva reserva';
   document.getElementById('btnEliminar').style.display = 'none';
   document.getElementById('nombre').value = '';
@@ -340,6 +358,7 @@ function abrirModalEditar(id) {
   }
 
   editandoId = id;
+
   document.getElementById('modalTitulo').textContent = 'Editar reserva';
   document.getElementById('btnEliminar').style.display = 'inline-block';
   document.getElementById('nombre').value = r.nombre || '';
@@ -353,8 +372,44 @@ function abrirModalEditar(id) {
 
   actualizarOpcionesHorario(r.fecha, r.horario || HORARIO_FIJO);
   document.getElementById('horario').value = r.horario || HORARIO_FIJO;
+
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
+}
+
+// Cuando el usuario cambia el horario en el select
+function cambiarTurnoEnModal() {
+  const fecha = document.getElementById('fecha').value;
+  const nuevoHorario = document.getElementById('horario').value;
+  if (!fecha || !nuevoHorario) return;
+
+  // Buscar si ya existe reserva para esa fecha + horario
+  const existente = reservas.find(function(r) {
+    return r.fecha === fecha && r.horario === nuevoHorario;
+  });
+
+  if (existente) {
+    // Existe → cargar esa reserva
+    abrirModalEditar(existente.id);
+  } else {
+    // No existe → modo nueva reserva con ese horario
+    editandoId = null;
+    document.getElementById('modalTitulo').textContent = 'Nueva reserva';
+    document.getElementById('btnEliminar').style.display = 'none';
+
+    document.getElementById('nombre').value = '';
+    document.getElementById('telefono').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('total').value = '';
+    document.getElementById('sena').value = '';
+    document.getElementById('senaPagada').checked = false;
+    document.getElementById('notas').value = '';
+
+    document.getElementById('fecha').value = fecha;
+    actualizarOpcionesHorario(fecha, nuevoHorario);
+    document.getElementById('horario').value = nuevoHorario;
+    calcularSaldo();
+  }
 }
 
 function cerrarModal() {
@@ -366,12 +421,15 @@ function calcularSaldo() {
   const total = Number(document.getElementById('total').value) || 0;
   const sena = Number(document.getElementById('sena').value) || 0;
   const pagada = document.getElementById('senaPagada').checked;
-  let txt = pagada ? formatearMoneda(Math.max(0, total - sena)) : formatearMoneda(total);
+  const txt = pagada ? formatearMoneda(Math.max(0, total - sena)) : formatearMoneda(total);
   document.getElementById('saldoTexto').textContent = txt;
 }
 
 async function guardarReserva() {
-  if (!supabaseClient) return alert('Sin conexión');
+  if (!supabaseClient) {
+    alert('Sin conexión a Supabase');
+    return;
+  }
 
   const nombre = document.getElementById('nombre').value.trim();
   const fecha = document.getElementById('fecha').value;
@@ -404,12 +462,16 @@ async function guardarReserva() {
   }
 
   if (error) {
-    alert('Error: ' + error.message);
+    console.error(error);
+    alert('Error al guardar: ' + error.message);
     return;
   }
 
+  const eraEdicion = !!editandoId;
   cerrarModal();
-  mostrarToast(editandoId ? 'Reserva actualizada' : 'Reserva creada');
+  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada');
+
+  // Importante: recargar todo (calendario + lista)
   await cargarReservas();
 }
 
@@ -417,7 +479,11 @@ async function eliminarReserva() {
   if (!editandoId) return;
   if (!confirm('¿Eliminar esta reserva?')) return;
 
-  const { error } = await supabaseClient.from('reservas').delete().eq('id', editandoId);
+  const { error } = await supabaseClient
+    .from('reservas')
+    .delete()
+    .eq('id', editandoId);
+
   if (error) {
     alert('Error al eliminar: ' + error.message);
     return;
@@ -430,20 +496,32 @@ async function eliminarReserva() {
 
 // ---------- INICIO ----------
 document.addEventListener('DOMContentLoaded', function() {
-  // Eventos
-  document.getElementById('btnNuevaReserva').addEventListener('click', function() { abrirModalNueva(); });
-  document.getElementById('btnMesAnterior').addEventListener('click', function() { cambiarMes(-1); });
-  document.getElementById('btnMesSiguiente').addEventListener('click', function() { cambiarMes(1); });
+  document.getElementById('btnNuevaReserva').addEventListener('click', function() {
+    abrirModalNueva();
+  });
+  document.getElementById('btnMesAnterior').addEventListener('click', function() {
+    cambiarMes(-1);
+  });
+  document.getElementById('btnMesSiguiente').addEventListener('click', function() {
+    cambiarMes(1);
+  });
   document.getElementById('btnCerrarModal').addEventListener('click', cerrarModal);
   document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
   document.getElementById('btnEliminar').addEventListener('click', eliminarReserva);
   document.getElementById('btnGuardar').addEventListener('click', guardarReserva);
+
   document.getElementById('total').addEventListener('input', calcularSaldo);
   document.getElementById('sena').addEventListener('input', calcularSaldo);
   document.getElementById('senaPagada').addEventListener('change', calcularSaldo);
 
   document.getElementById('fecha').addEventListener('change', function(e) {
-    actualizarOpcionesHorario(e.target.value, '');
+    const fecha = e.target.value;
+    actualizarOpcionesHorario(fecha, esSabado(fecha) ? '10:00-17:00' : HORARIO_FIJO);
+  });
+
+  // Cuando cambian el horario → carga la otra reserva o crea una nueva
+  document.getElementById('horario').addEventListener('change', function() {
+    cambiarTurnoEnModal();
   });
 
   document.getElementById('modal').addEventListener('click', function(e) {
