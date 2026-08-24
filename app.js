@@ -9,7 +9,61 @@ if (!Auth.estaAutenticado()) {
 const SUPABASE_URL = 'https://vebqlbcfjxnpryjdgfvq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xN-Z3i_sUAyB15QmoM67iw_y3Xisvqv';
 const DB_DATE_COLUMN = 'Fecha';
+function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
+  const select = document.getElementById('horario');
+  const ayuda = document.getElementById('horarioAyuda');
+  if (!select) return;
 
+  select.innerHTML = '';
+
+  if (!fecha || !diaPermitido(fecha)) {
+    select.disabled = true;
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Seleccioná una fecha válida';
+    select.appendChild(opt);
+    if (ayuda) ayuda.textContent = 'Seleccioná una fecha válida.';
+    return;
+  }
+
+  if (esSabado(fecha)) {
+    // Sábado → siempre se pueden elegir ambos turnos (nunca se marca como ocupado)
+    select.disabled = false;
+    if (ayuda) {
+      ayuda.textContent = editandoId
+        ? 'Podés cambiar el horario o eliminar la reserva.'
+        : 'Sábado: elegí turno día o noche.';
+    }
+
+    Object.entries(HORARIOS).forEach(([valor, texto]) => {
+      const option = document.createElement('option');
+      option.value = valor;
+      option.textContent = texto;
+      if (valor === horarioSeleccionado) option.selected = true;
+      select.appendChild(option);
+    });
+
+    // Si no había ninguno seleccionado, dejamos el primero
+    if (!horarioSeleccionado) {
+      select.value = '10:00-17:00';
+    }
+
+  } else {
+    // Resto de días → turno fijo
+    select.disabled = true;
+    if (ayuda) {
+      ayuda.textContent = editandoId
+        ? 'Turno día. Podés modificar los datos o eliminar la reserva.'
+        : 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
+    }
+
+    const option = document.createElement('option');
+    option.value = HORARIO_FIJO;
+    option.textContent = HORARIOS[HORARIO_FIJO];
+    option.selected = true;
+    select.appendChild(option);
+  }
+}
 const HORARIOS = {
   '10:00-17:00': '☀️ Día — 10:00 a 17:00',
   '22:00-05:00': '🌙 Noche — 22:00 a 05:00'
@@ -133,19 +187,34 @@ function parseFechaLocal(fechaStr) {
 async function cargarReservas() {
   if (!supabaseClient) return;
 
-  const { data, error } = await supabaseClient
-    .from('reservas')
-    .select('*')
-    .order(DB_DATE_COLUMN, { ascending: true });
+  try {
+    const { data, error } = await supabaseClient
+      .from('reservas')
+      .select('*')
+      .order(DB_DATE_COLUMN, { ascending: true });
 
-  if (error) {
-    console.error(error);
+    if (error) {
+      console.error('Error cargando reservas:', error);
+      document.getElementById('listaReservas').innerHTML = `
+        <div class="empty-state">
+          ⚠️ Error cargando reservas<br><br>
+          ${escaparHTML(error.message)}
+        </div>`;
+      reservas = [];
+    } else {
+      reservas = (data || []).map(normalizarReserva);
+    }
+
+    // Siempre actualizar las dos vistas
+    renderCalendario();
+    renderLista();
+
+  } catch (err) {
+    console.error(err);
     document.getElementById('listaReservas').innerHTML = `
-      <div class="empty-state">⚠️ Error cargando reservas<br>${escaparHTML(error.message)}</div>`;
-    reservas = [];
-  } else {
-    reservas = (data || []).map(normalizarReserva);
+      <div class="empty-state">Error inesperado al cargar las reservas.</div>`;
   }
+}
 
   renderCalendario();
   renderLista();
@@ -308,15 +377,20 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   const ayuda = document.getElementById('horarioAyuda');
   if (!select) return;
 
-  select.innerHTML = '<option value="">Seleccioná un horario</option>';
+  select.innerHTML = '';
 
   if (!fecha || !diaPermitido(fecha)) {
     select.disabled = true;
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Seleccioná una fecha válida';
+    select.appendChild(opt);
     if (ayuda) ayuda.textContent = 'Seleccioná una fecha válida.';
     return;
   }
 
   if (esSabado(fecha)) {
+    // Sábado → siempre se pueden elegir ambos turnos (nunca se marca como ocupado)
     select.disabled = false;
     if (ayuda) {
       ayuda.textContent = editandoId
@@ -325,33 +399,27 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
     }
 
     Object.entries(HORARIOS).forEach(([valor, texto]) => {
-      const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
       const option = document.createElement('option');
       option.value = valor;
-
-      if (ocupadoPorOtro) {
-        option.textContent = `${texto} — OCUPADO`;
-        option.disabled = true;
-      } else {
-        option.textContent = texto;
-        option.disabled = false;
-      }
-
-      // El horario actual de la reserva que editamos NUNCA se deshabilita
-      if (valor === horarioSeleccionado) {
-        option.selected = true;
-        option.disabled = false;
-        option.textContent = texto;
-      }
+      option.textContent = texto;
+      if (valor === horarioSeleccionado) option.selected = true;
       select.appendChild(option);
     });
+
+    // Si no había ninguno seleccionado, dejamos el primero
+    if (!horarioSeleccionado) {
+      select.value = '10:00-17:00';
+    }
+
   } else {
+    // Resto de días → turno fijo
     select.disabled = true;
     if (ayuda) {
       ayuda.textContent = editandoId
-        ? 'Turno día. Podés modificar o eliminar la reserva.'
-        : 'Solo los sábados se elige horario. Turno día (10:00-17:00).';
+        ? 'Turno día. Podés modificar los datos o eliminar la reserva.'
+        : 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
     }
+
     const option = document.createElement('option');
     option.value = HORARIO_FIJO;
     option.textContent = HORARIOS[HORARIO_FIJO];
@@ -425,7 +493,10 @@ function calcularSaldo() {
 }
 
 async function guardarReserva() {
-  if (!supabaseClient) return alert('Sin conexión a Supabase');
+  if (!supabaseClient) {
+    alert('Sin conexión a Supabase');
+    return;
+  }
 
   const nombre = document.getElementById('nombre').value.trim();
   const telefono = document.getElementById('telefono').value.trim();
@@ -436,16 +507,21 @@ async function guardarReserva() {
   if (!fecha) return alert('La fecha es obligatoria.');
   if (!diaPermitido(fecha)) return alert('Día no permitido.');
 
-  if (!esSabado(fecha)) horario = HORARIO_FIJO;
+  // Forzar horario fijo si no es sábado
+  if (!esSabado(fecha)) {
+    horario = HORARIO_FIJO;
+  }
 
-  if (!horario || !HORARIOS[horario]) return alert('Elegí un horario.');
-  if (horarioOcupado(fecha, horario, editandoId)) {
-    return alert('Ese turno ya está reservado por otra persona.');
+  if (!horario || !HORARIOS[horario]) {
+    return alert('Elegí un horario.');
   }
 
   const total = Number(document.getElementById('total').value) || 0;
   const sena = Number(document.getElementById('sena').value) || 0;
   if (sena > total) return alert('La seña no puede ser mayor que el total.');
+
+  // Ya NO bloqueamos si el turno está ocupado.
+  // El administrador puede modificar o cambiar libremente.
 
   const data = {
     nombre,
@@ -461,20 +537,29 @@ async function guardarReserva() {
 
   let error;
   if (editandoId) {
-    ({ error } = await supabaseClient.from('reservas').update(data).eq('id', editandoId));
+    ({ error } = await supabaseClient
+      .from('reservas')
+      .update(data)
+      .eq('id', editandoId));
   } else {
-    ({ error } = await supabaseClient.from('reservas').insert([data]));
+    ({ error } = await supabaseClient
+      .from('reservas')
+      .insert([data]));
   }
 
   if (error) {
-    console.error(error);
-    alert(error.code === '23505' ? 'Ese turno ya está reservado.' : 'Error: ' + error.message);
+    console.error('Error guardando:', error);
+    alert('Error al guardar:\n\n' + error.message);
     return;
   }
 
   const eraEdicion = !!editandoId;
+
+  // Cerrar modal primero
   cerrarModal();
-  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada');
+  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
+
+  // Forzar recarga completa (calendario + lista de próximas reservas)
   await cargarReservas();
 }
 
