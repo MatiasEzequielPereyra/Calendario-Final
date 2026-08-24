@@ -27,6 +27,7 @@ const Auth = {
   }
 };
 
+// Redirigir al login si no está autenticado (excepto en la página de login)
 if (
   !window.location.pathname.endsWith('/login.html') &&
   !window.location.pathname.endsWith('login.html') &&
