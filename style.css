@@ -566,22 +566,14 @@ main {
   font-weight: 400;
 }
 
-/* Card de la derecha ocupa todo el alto disponible */
-main > .card:last-child {
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* importante para que el scroll funcione bien */
-}
-
 .reservas-list {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  flex: 1;                 /* ocupa todo el espacio restante del card */
-  min-height: 0;
+  max-height: 520px;          /* misma altura aproximada del calendario */
   overflow-y: auto;
   margin-top: 1rem;
-  padding-right: 4px;      /* espacio para la barra de scroll */
+  padding-right: 4px;
 }
 
 /* Scroll más limpio */
@@ -601,6 +593,26 @@ main > .card:last-child {
 
 .reservas-list::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+.reserva-item {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 0.85rem;
+  border-left: 4px solid var(--reserved);
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  display: block;
+  text-align: left;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.reserva-item:hover {
+  background: #eef2f5;
+  transform: translateX(2px);
 }
 
 /* =========================
