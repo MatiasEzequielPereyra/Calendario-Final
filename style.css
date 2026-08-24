@@ -561,94 +561,47 @@ main {
 ========================= */
 
 .contador {
-
   font-size: 0.85rem;
-
   color: var(--muted);
-
   font-weight: 400;
-
 }
 
+/* Card de la derecha ocupa todo el alto disponible */
+main > .card:last-child {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* importante para que el scroll funcione bien */
+}
 
 .reservas-list {
-
   display: flex;
-
   flex-direction: column;
-
   gap: 0.7rem;
-
-  max-height: 520px;
-
+  flex: 1;                 /* ocupa todo el espacio restante del card */
+  min-height: 0;
   overflow-y: auto;
-
   margin-top: 1rem;
-
+  padding-right: 4px;      /* espacio para la barra de scroll */
 }
 
+/* Scroll más limpio */
+.reservas-list::-webkit-scrollbar {
+  width: 6px;
+}
 
-.reserva-item {
-
-  background: #f8f9fa;
-
+.reservas-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
   border-radius: 10px;
-
-  padding: 0.85rem;
-
-  border-left:
-    4px solid var(--reserved);
-
-  cursor: pointer;
-
-  transition: all 0.15s;
-
 }
 
-
-.reserva-item:hover {
-
-  background: #eef2f5;
-
-  transform: translateX(2px);
-
+.reservas-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
 }
 
-
-.reserva-item .nombre {
-
-  font-weight: 600;
-
-  font-size: 0.95rem;
-
+.reservas-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
-
-
-.reserva-item .fechas {
-
-  font-size: 0.8rem;
-
-  color: var(--muted);
-
-  margin: 0.2rem 0;
-
-}
-
-
-.montos {
-
-  font-size: 0.8rem;
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 0.4rem 0.8rem;
-
-  margin-top: 0.3rem;
-
-}
-
 
 /* =========================
    BADGES
