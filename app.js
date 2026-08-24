@@ -41,18 +41,21 @@ function initSupabase() {
   }
 }
 
-/** Normaliza la fecha a YYYY-MM-DD (sin hora) */
+/** Normaliza cualquier fecha a YYYY-MM-DD */
 function normalizarFechaStr(valor) {
   if (!valor) return '';
   const str = String(valor).trim();
-  // Si viene con hora (ISO), nos quedamos solo con la parte de fecha
+
+  // Caso más común: viene con hora (ISO)
   if (str.includes('T')) return str.split('T')[0];
-  // Si ya es YYYY-MM-DD
+
+  // Ya está en formato correcto
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  // Último recurso: intentar parsear
+
+  // Último intento
   const d = new Date(str);
   if (isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function normalizarReserva(r) {
@@ -66,11 +69,11 @@ function normalizarReserva(r) {
 function escaparHTML(texto) {
   if (texto === null || texto === undefined) return '';
   return String(texto)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function formatearFecha(fechaStr) {
@@ -105,7 +108,7 @@ function diaPermitido(fechaStr) {
 }
 
 function nombreDia(fechaStr) {
-  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   return dias[fechaLocalDesdeInput(fechaStr).getDay()];
 }
 
@@ -132,7 +135,15 @@ function horariosDisponibles(fecha, ignorarId = null) {
 
 function hoyStr() {
   const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+}
+
+function parseFechaLocal(fechaStr) {
+  if (!fechaStr) return null;
+  const partes = String(fechaStr).split('-');
+  if (partes.length !== 3) return null;
+  const [y, m, d] = partes.map(Number);
+  return new Date(y, m - 1, d); // hora 00:00 local
 }
 
 async function cargarReservas() {
@@ -238,11 +249,20 @@ function cambiarMes(direccion) {
 
 function renderLista() {
   const contenedor = document.getElementById('listaReservas');
-  const hoy = hoyStr();
+  const hoy = parseFechaLocal(hoyStr());
 
   const visibles = reservas
-    .filter(r => r.fecha && r.fecha >= hoy)
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.horario).localeCompare(String(b.horario)));
+    .filter(r => {
+      if (!r.fecha) return false;
+      const fechaReserva = parseFechaLocal(r.fecha);
+      if (!fechaReserva) return false;
+      return fechaReserva >= hoy;
+    })
+    .sort((a, b) => {
+      const cmpFecha = a.fecha.localeCompare(b.fecha);
+      if (cmpFecha !== 0) return cmpFecha;
+      return String(a.horario || '').localeCompare(String(b.horario || ''));
+    });
 
   document.getElementById('contadorReservas').textContent = `(${visibles.length})`;
 
@@ -262,13 +282,19 @@ function renderLista() {
       badge = '<span class="badge badge-parcial">Seña pendiente</span>';
     }
 
-    const horarioTexto = HORARIOS[reserva.horario] || `Horario: ${reserva.horario || 'No definido'}`;
+    const horarioTexto = HORARIOS[reserva.horario]
+      ? HORARIOS[reserva.horario].replace(/^☀️ |^🌙 /, '')
+      : (reserva.horario || 'No definido');
+
     const icono = reserva.horario === '22:00-05:00' ? '🌙' : '☀️';
 
     return `<button type="button" class="reserva-item" data-id="${escaparHTML(reserva.id)}">
       <div class="nombre">${escaparHTML(reserva.nombre || 'Sin nombre')}</div>
-      <div class="fechas">${formatearFecha(reserva.fecha)} · <strong>${icono} ${escaparHTML(horarioTexto.replace(/^☀️ |^🌙 /, ''))}</strong></div>
-      <div class="montos"><span>Total: ${formatearMoneda(reserva.total)}</span>${badge}</div>
+      <div class="fechas">${formatearFecha(reserva.fecha)} · <strong>${icono} ${escaparHTML(horarioTexto)}</strong></div>
+      <div class="montos">
+        <span>Total: ${formatearMoneda(reserva.total)}</span>
+        ${badge}
+      </div>
     </button>`;
   }).join('');
 
@@ -418,9 +444,11 @@ async function guardarReserva() {
   }
 
   const eraEdicion = !!editandoId;
-  await cargarReservas();   // ← vuelve a cargar y actualiza calendario + lista derecha
   cerrarModal();
   mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
+
+  // Recarga completa (calendario + lista de la derecha)
+  await cargarReservas();
 }
 
 async function eliminarReserva() {
