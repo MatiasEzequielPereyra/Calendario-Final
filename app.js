@@ -216,50 +216,75 @@ function renderCalendario() {
       dotsContainer.className = 'day-dots';
 
       if (esSab) {
-        // ===== SÁBADO: dos puntos independientes =====
-        const ocupadoDia = reservasDia.some(r => r.horario === '10:00-17:00');
-        const ocupadoNoche = reservasDia.some(r => r.horario === '22:00-05:00');
+        // ========== SÁBADO: dos puntos independientes ==========
+        const reservaDia = reservasDia.find(r => r.horario === '10:00-17:00');
+        const reservaNoche = reservasDia.find(r => r.horario === '22:00-05:00');
 
-        // Punto Día
+        // Punto del turno DÍA
         const puntoDia = document.createElement('span');
-        puntoDia.className = `day-dot ${ocupadoDia ? 'ocupado' : 'disponible'}`;
-        puntoDia.title = ocupadoDia ? 'Turno Día: Reservado' : 'Turno Día: Disponible';
+        puntoDia.className = `day-dot ${reservaDia ? 'ocupado' : 'disponible'}`;
+        puntoDia.title = reservaDia ? 'Turno Día: Reservado (tocar para editar)' : 'Turno Día: Disponible';
+        puntoDia.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (reservaDia) {
+            abrirModalEditar(reservaDia.id);   // ← permite editar/borrar
+          } else {
+            abrirModalNueva(fecha, '10:00-17:00');
+          }
+        });
         dotsContainer.appendChild(puntoDia);
 
-        // Punto Noche
+        // Punto del turno NOCHE
         const puntoNoche = document.createElement('span');
-        puntoNoche.className = `day-dot ${ocupadoNoche ? 'ocupado' : 'disponible'}`;
-        puntoNoche.title = ocupadoNoche ? 'Turno Noche: Reservado' : 'Turno Noche: Disponible';
+        puntoNoche.className = `day-dot ${reservaNoche ? 'ocupado' : 'disponible'}`;
+        puntoNoche.title = reservaNoche ? 'Turno Noche: Reservado (tocar para editar)' : 'Turno Noche: Disponible';
+        puntoNoche.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (reservaNoche) {
+            abrirModalEditar(reservaNoche.id); // ← permite editar/borrar
+          } else {
+            abrirModalNueva(fecha, '22:00-05:00');
+          }
+        });
         dotsContainer.appendChild(puntoNoche);
 
         div.appendChild(dotsContainer);
 
-        // Click en el día
+        // Click general en el día (si no se tocó un punto)
         div.addEventListener('click', () => {
-          if (ocupadoDia && ocupadoNoche) {
-            // Ambos ocupados → editar la primera
-            const reserva = reservasDia[0];
-            if (reserva) abrirModalEditar(reserva.id);
+          if (reservaDia && reservaNoche) {
+            // Ambos ocupados → abrir el primero
+            abrirModalEditar(reservaDia.id);
           } else {
             abrirModalNueva(fecha);
           }
         });
 
       } else {
-        // ===== RESTO DE DÍAS: un solo punto =====
-        const estaOcupado = reservasDia.some(r => r.horario === HORARIO_FIJO);
+        // ========== RESTO DE DÍAS: un solo punto ==========
+        const reserva = reservasDia.find(r => r.horario === HORARIO_FIJO);
 
         const punto = document.createElement('span');
-        punto.className = `day-dot ${estaOcupado ? 'ocupado' : 'disponible'}`;
+        punto.className = `day-dot ${reserva ? 'ocupado' : 'disponible'}`;
+        punto.title = reserva ? 'Reservado (tocar para editar)' : 'Disponible';
+        
+        punto.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (reserva) {
+            abrirModalEditar(reserva.id);     // ← permite editar/borrar
+          } else {
+            abrirModalNueva(fecha, HORARIO_FIJO);
+          }
+        });
+
         dotsContainer.appendChild(punto);
         div.appendChild(dotsContainer);
 
         div.addEventListener('click', () => {
-          if (estaOcupado) {
-            const reserva = reservasDia[0];
-            if (reserva) abrirModalEditar(reserva.id);
+          if (reserva) {
+            abrirModalEditar(reserva.id);
           } else {
-            abrirModalNueva(fecha);
+            abrirModalNueva(fecha, HORARIO_FIJO);
           }
         });
       }
