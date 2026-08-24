@@ -27,7 +27,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ========== HEADER ========== */
+/* Header */
 header {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
@@ -54,7 +54,7 @@ header h1 {
   flex-wrap: wrap;
 }
 
-/* ========== BOTONES ========== */
+/* Botones */
 button {
   cursor: pointer;
   border: none;
@@ -71,48 +71,17 @@ button {
   color: var(--primary);
 }
 
-.btn-primary:hover {
-  background: #f0f0f0;
-}
-
 .btn-logout {
   background: rgba(255,255,255,0.15);
   color: white;
   border: 1px solid rgba(255,255,255,0.35);
 }
 
-.btn-logout:hover {
-  background: rgba(255,255,255,0.28);
-}
+.btn-success { background: var(--accent); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-cancel { background: #e9ecef; color: var(--text); }
 
-.btn-success {
-  background: var(--accent);
-  color: white;
-}
-
-.btn-success:hover {
-  background: var(--primary);
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: var(--danger-dark);
-}
-
-.btn-cancel {
-  background: #e9ecef;
-  color: var(--text);
-}
-
-.btn-cancel:hover {
-  background: #dee2e6;
-}
-
-/* ========== MAIN ========== */
+/* Main */
 main {
   max-width: 1100px;
   margin: 0 auto;
@@ -138,11 +107,9 @@ main {
   margin-bottom: 1rem;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
-/* ========== CALENDARIO ========== */
+/* Calendario */
 .calendar-header {
   display: flex;
   justify-content: space-between;
@@ -166,10 +133,6 @@ main {
   align-items: center;
   justify-content: center;
   padding: 0;
-}
-
-.nav-btn:hover {
-  background: var(--border);
 }
 
 .weekdays {
@@ -200,30 +163,19 @@ main {
   border: 2px solid transparent;
   min-height: 48px;
   transition: 0.15s;
-  -webkit-user-select: none;
   user-select: none;
 }
 
-.day:hover:not(.empty):not(.day-disabled) {
+.day:hover:not(.empty) {
   border-color: var(--accent);
   background: #e8f5e9;
 }
 
-.day.empty {
-  background: transparent;
-  cursor: default;
-}
-
+.day.empty { background: transparent; cursor: default; }
 .day.today {
   border-color: var(--primary);
   font-weight: 700;
   background: #e8f5e9;
-}
-
-.day-disabled {
-  opacity: 0.38;
-  cursor: not-allowed !important;
-  background: #f1f1f1;
 }
 
 .day-number {
@@ -232,7 +184,6 @@ main {
   font-size: 0.95rem;
 }
 
-/* Puntos */
 .day-dots {
   display: flex;
   gap: 4px;
@@ -244,17 +195,16 @@ main {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .day-dot.disponible {
   background: #22c55e;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.22);
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.22);
 }
 
 .day-dot.ocupado {
   background: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.22);
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.22);
 }
 
 /* Leyenda */
@@ -280,15 +230,10 @@ main {
   border-radius: 50%;
 }
 
-.cuadro.verde {
-  background: #22c55e;
-}
+.cuadro.verde { background: #22c55e; }
+.cuadro.rojo { background: #ef4444; }
 
-.cuadro.rojo {
-  background: #ef4444;
-}
-
-/* ========== LISTA DE RESERVAS ========== */
+/* Lista de reservas */
 .contador {
   font-size: 0.85rem;
   color: var(--muted);
@@ -298,19 +243,31 @@ main {
 .reservas-list {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  max-height: 520px;
+  gap: 0.75rem;
+  max-height: 540px;
   overflow-y: auto;
   margin-top: 1rem;
+  padding-right: 6px;
   -webkit-overflow-scrolling: touch;
-  padding-right: 4px;
+}
+
+.reservas-list::-webkit-scrollbar {
+  width: 6px;
+}
+.reservas-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.reservas-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
 }
 
 .reserva-item {
   background: #f8f9fa;
-  border-radius: 12px;
-  padding: 0.9rem;
-  border-left: 4px solid var(--danger);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  border-left: 5px solid var(--danger);
   width: 100%;
   text-align: left;
   border-top: 0;
@@ -318,30 +275,47 @@ main {
   border-bottom: 0;
   cursor: pointer;
   font-family: inherit;
-  transition: 0.15s;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .reserva-item:hover {
-  background: #eef2f5;
+  background: #eef5f1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .reserva-item .nombre {
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  margin-bottom: 0.15rem;
 }
 
 .reserva-item .fechas {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--muted);
-  margin: 0.25rem 0;
+  margin-bottom: 0.35rem;
 }
 
-.montos {
-  font-size: 0.82rem;
+.reserva-item .montos {
+  font-size: 0.83rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 0.8rem;
-  margin-top: 0.3rem;
+  align-items: center;
+}
+
+/* Nota */
+.nota-reserva {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  background: #fff8e6;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #7a5c00;
+  line-height: 1.4;
+  border-left: 3px solid #f0c14b;
 }
 
 /* Badges */
@@ -353,29 +327,17 @@ main {
   font-weight: 600;
 }
 
-.badge-ok {
-  background: #d8f3dc;
-  color: #1b4332;
-}
-
-.badge-pendiente {
-  background: #ffe5e5;
-  color: #9b2226;
-}
-
-.badge-parcial {
-  background: #fff3cd;
-  color: #856404;
-}
+.badge-ok { background: #d8f3dc; color: #1b4332; }
+.badge-pendiente { background: #ffe5e5; color: #9b2226; }
+.badge-parcial { background: #fff3cd; color: #856404; }
 
 .empty-state {
   text-align: center;
   color: var(--muted);
   padding: 2rem 1rem;
-  font-size: 0.95rem;
 }
 
-/* ========== MODAL ========== */
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -386,9 +348,7 @@ main {
   z-index: 100;
 }
 
-.modal-overlay.active {
-  display: flex;
-}
+.modal-overlay.active { display: flex; }
 
 .modal {
   background: white;
@@ -398,7 +358,6 @@ main {
   max-height: 92vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  box-shadow: 0 -4px 30px rgba(0,0,0,0.2);
 }
 
 .modal-header {
@@ -413,10 +372,6 @@ main {
   z-index: 2;
 }
 
-.modal-header h3 {
-  font-size: 1.15rem;
-}
-
 .close-btn {
   background: transparent;
   font-size: 1.6rem;
@@ -425,17 +380,9 @@ main {
   line-height: 1;
 }
 
-.close-btn:hover {
-  color: var(--danger);
-}
+.modal-body { padding: 1.3rem; }
 
-.modal-body {
-  padding: 1.3rem;
-}
-
-.form-group {
-  margin-bottom: 1.1rem;
-}
+.form-group { margin-bottom: 1.1rem; }
 
 .form-group label {
   display: block;
@@ -478,10 +425,7 @@ main {
   margin: 0.6rem 0 1.1rem;
 }
 
-.form-check input {
-  width: 18px;
-  height: 18px;
-}
+.form-check input { width: 18px; height: 18px; }
 
 .form-help {
   display: block;
@@ -498,11 +442,8 @@ main {
   font-size: 0.95rem;
 }
 
-.saldo-box strong {
-  color: var(--primary);
-}
+.saldo-box strong { color: var(--primary); }
 
-/* Footer del modal - botones más grandes */
 .modal-footer {
   padding: 1rem 1.3rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -515,12 +456,8 @@ main {
   background: white;
 }
 
-.footer-right {
-  display: flex;
-  gap: 0.6rem;
-}
+.footer-right { display: flex; gap: 0.6rem; }
 
-/* Botón Eliminar más grande y fácil de tocar */
 #btnEliminar {
   min-height: 48px;
   padding: 0.9rem 1.4rem !important;
@@ -530,7 +467,7 @@ main {
   min-width: 120px;
 }
 
-/* ========== TOAST ========== */
+/* Toast */
 .toast {
   position: fixed;
   bottom: 1.5rem;
@@ -554,7 +491,7 @@ main {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ========== LOGIN ========== */
+/* Login */
 .login-page {
   display: flex;
   align-items: center;
@@ -564,10 +501,7 @@ main {
   padding: 1.5rem;
 }
 
-.login-container {
-  width: 100%;
-  max-width: 420px;
-}
+.login-container { width: 100%; max-width: 420px; }
 
 .login-card {
   background: white;
@@ -577,30 +511,11 @@ main {
   text-align: center;
 }
 
-.login-logo {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
-}
-
-.login-card h1 {
-  color: var(--primary-dark);
-  margin-bottom: 0.25rem;
-}
-
-.login-card > p {
-  color: var(--muted);
-  margin-bottom: 1.5rem;
-}
-
-.login-card form {
-  text-align: left;
-}
-
-.login-button {
-  width: 100%;
-  padding: 0.8rem;
-  margin-top: 0.5rem;
-}
+.login-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+.login-card h1 { color: var(--primary-dark); margin-bottom: 0.25rem; }
+.login-card > p { color: var(--muted); margin-bottom: 1.5rem; }
+.login-card form { text-align: left; }
+.login-button { width: 100%; padding: 0.8rem; margin-top: 0.5rem; }
 
 .login-error {
   color: var(--danger);
@@ -610,71 +525,23 @@ main {
   text-align: center;
 }
 
-/* ========== RESPONSIVE (iPhone y móviles) ========== */
+/* Responsive */
 @media (max-width: 900px) {
   main {
     grid-template-columns: 1fr;
     padding: 1rem;
-    gap: 1rem;
   }
-
-  .reservas-list {
-    max-height: 380px;
-  }
+  .reservas-list { max-height: 400px; }
 }
 
 @media (max-width: 600px) {
-  header {
-    padding: 0.9rem 1rem;
-  }
+  header { padding: 0.9rem 1rem; }
+  header h1 { font-size: 1.1rem; }
 
-  header h1 {
-    font-size: 1.1rem;
-  }
+  .card { padding: 1rem; }
+  .day { min-height: 46px; }
+  .form-row { grid-template-columns: 1fr; }
 
-  .btn-primary,
-  .btn-logout {
-    padding: 0.5rem 0.8rem;
-    font-size: 0.9rem;
-  }
-
-  .card {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-
-  .calendar-header h2 {
-    font-size: 1.1rem;
-  }
-
-  .nav-btn {
-    width: 38px;
-    height: 38px;
-  }
-
-  .weekdays {
-    font-size: 0.7rem;
-  }
-
-  .day {
-    min-height: 46px;
-    border-radius: 10px;
-  }
-
-  .day-number {
-    font-size: 0.9rem;
-  }
-
-  .day-dot {
-    width: 7px;
-    height: 7px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  /* Botones del modal a pantalla completa en celular */
   .modal-footer {
     flex-direction: column-reverse;
     gap: 0.7rem;
@@ -682,7 +549,6 @@ main {
 
   .footer-right {
     width: 100%;
-    display: flex;
     flex-direction: column-reverse;
     gap: 0.6rem;
   }
@@ -690,7 +556,6 @@ main {
   #btnEliminar {
     width: 100%;
     min-height: 52px;
-    font-size: 1.05rem !important;
     order: -1;
   }
 
@@ -698,20 +563,5 @@ main {
   .btn-cancel {
     width: 100%;
     min-height: 50px;
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 380px) {
-  header h1 {
-    font-size: 1rem;
-  }
-
-  .day {
-    min-height: 42px;
-  }
-
-  .day-number {
-    font-size: 0.85rem;
   }
 }
