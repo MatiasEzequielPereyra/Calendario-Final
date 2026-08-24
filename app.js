@@ -1,7 +1,9 @@
 /* =========================================================
    QUINTA MEWEN - RESERVAS
-   Solo los sábados se elige horario (día/noche).
-   Resto de días: turno fijo de día (10:00-17:00).
+   - Todos los días habilitados
+   - Solo los sábados se elige horario (día/noche)
+   - Resto de días: turno fijo día (10:00-17:00)
+   - Calendario con puntos verde/rojo
 ========================================================= */
 
 if (!Auth.estaAutenticado()) {
@@ -18,9 +20,8 @@ const HORARIOS = {
   '22:00-05:00': '🌙 Noche — 22:00 a 05:00'
 };
 
-const HORARIO_FIJO = '10:00-17:00'; // para días que no son sábado
+const HORARIO_FIJO = '10:00-17:00';
 
-// Todos los días habilitados
 const DIAS_PERMITIDOS = [0, 1, 2, 3, 4, 5, 6];
 const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -132,7 +133,6 @@ function horariosDisponibles(fecha, ignorarId = null) {
   if (esSabado(fecha)) {
     return Object.keys(HORARIOS).filter(h => !horarioOcupado(fecha, h, ignorarId));
   }
-  // Días que no son sábado: solo el turno fijo
   return horarioOcupado(fecha, HORARIO_FIJO, ignorarId) ? [] : [HORARIO_FIJO];
 }
 
@@ -209,55 +209,33 @@ function renderCalendario() {
     div.appendChild(numero);
 
     if (permitido) {
-      const slots = document.createElement('div');
-      slots.className = 'day-slots';
+      let estaOcupado = false;
 
       if (esSab) {
-        // Sábado: mostrar ambos turnos
-        ['10:00-17:00', '22:00-05:00'].forEach(horario => {
-          const reserva = reservasDia.find(r => r.horario === horario);
-          const slot = document.createElement('button');
-          slot.type = 'button';
-          slot.className = `day-slot ${reserva ? 'ocupado' : 'libre'}`;
-          slot.innerHTML = reserva
-            ? `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small>Reservado</small>`
-            : `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small>Disponible</small>`;
-
-          slot.addEventListener('click', e => {
-            e.stopPropagation();
-            if (reserva) abrirModalEditar(reserva.id);
-            else abrirModalNueva(fecha, horario);
-          });
-          slots.appendChild(slot);
-        });
+        const tieneDia = reservasDia.some(r => r.horario === '10:00-17:00');
+        const tieneNoche = reservasDia.some(r => r.horario === '22:00-05:00');
+        estaOcupado = tieneDia && tieneNoche;
       } else {
-        // Resto de días: solo turno fijo de día
-        const reserva = reservasDia.find(r => r.horario === HORARIO_FIJO);
-        const slot = document.createElement('button');
-        slot.type = 'button';
-        slot.className = `day-slot ${reserva ? 'ocupado' : 'libre'}`;
-        slot.innerHTML = reserva
-          ? `☀️ Día<small>Reservado</small>`
-          : `☀️ Día<small>Disponible</small>`;
+        estaOcupado = reservasDia.some(r => r.horario === HORARIO_FIJO);
+      }
 
-        slot.addEventListener('click', e => {
-          e.stopPropagation();
+      const punto = document.createElement('span');
+      punto.className = `day-dot ${estaOcupado ? 'ocupado' : 'disponible'}`;
+      div.appendChild(punto);
+
+      div.addEventListener('click', () => {
+        if (estaOcupado) {
+          const reserva = reservasDia[0];
           if (reserva) abrirModalEditar(reserva.id);
-          else abrirModalNueva(fecha, HORARIO_FIJO);
-        });
-        slots.appendChild(slot);
-      }
-
-      div.appendChild(slots);
+        } else {
+          abrirModalNueva(fecha);
+        }
+      });
+    } else {
+      div.addEventListener('click', () => {
+        mostrarToast('Este día no está habilitado.');
+      });
     }
-
-    div.addEventListener('click', () => {
-      if (!permitido) {
-        mostrarToast('Este día no está habilitado para reservas.');
-        return;
-      }
-      abrirModalNueva(fecha);
-    });
 
     grid.appendChild(div);
   }
@@ -346,7 +324,6 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   }
 
   if (esSabado(fecha)) {
-    // Solo sábado: se puede elegir
     select.disabled = false;
     if (ayuda) ayuda.textContent = 'Sábado: podés elegir turno día o noche.';
 
@@ -360,9 +337,8 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
       select.appendChild(option);
     });
   } else {
-    // Resto de días: solo turno fijo, no se elige
     select.disabled = true;
-    if (ayuda) ayuda.textContent = 'Solo los sábados se puede elegir horario. Este día es turno día (10:00-17:00).';
+    if (ayuda) ayuda.textContent = 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
 
     const option = document.createElement('option');
     option.value = HORARIO_FIJO;
@@ -449,7 +425,6 @@ async function guardarReserva() {
   if (!fecha) return alert('La fecha es obligatoria.');
   if (!diaPermitido(fecha)) return alert(`No se pueden crear reservas los ${nombreDia(fecha)}.`);
 
-  // Forzar horario fijo si no es sábado
   if (!esSabado(fecha)) {
     horario = HORARIO_FIJO;
   }
@@ -500,7 +475,7 @@ async function guardarReserva() {
 
 async function eliminarReserva() {
   if (!editandoId || !supabaseClient) return;
-  if (!confirm('¿Seguro que querés eliminar esta reserva? El turno quedará nuevamente disponible.')) return;
+  if (!confirm('¿Seguro que querés eliminar esta reserva?')) return;
 
   const { error } = await supabaseClient.from('reservas').delete().eq('id', editandoId);
   if (error) {
@@ -511,7 +486,7 @@ async function eliminarReserva() {
 
   await cargarReservas();
   cerrarModal();
-  mostrarToast('Reserva eliminada. El turno quedó disponible.');
+  mostrarToast('Reserva eliminada.');
 }
 
 // Eventos
