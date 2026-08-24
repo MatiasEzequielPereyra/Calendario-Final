@@ -10,11 +10,11 @@
 <body>
 
   <header>
-    <h1>🏡 Calendario de Reservas – Quinta MeWen</h1>
-   <div class="header-actions">
-  <button class="btn-primary" id="btnNuevaReserva">+ Nueva reserva</button>
-  <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
-</div>
+    <h1>🏡 Quinta MeWen</h1>
+    <div class="header-actions">
+      <button class="btn-primary" id="btnNuevaReserva">+ Nueva reserva</button>
+      <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+    </div>
   </header>
 
   <main>
@@ -43,18 +43,12 @@
       <div class="days" id="diasGrid"></div>
 
       <div class="leyenda">
-        <span>
-          <span class="cuadro" style="background:#22c55e;"></span>
-          Disponible
-        </span>
-        <span>
-          <span class="cuadro" style="background:#ef4444;"></span>
-          Ocupado
-        </span>
+        <span><span class="cuadro verde"></span> Disponible</span>
+        <span><span class="cuadro rojo"></span> Ocupado</span>
       </div>
     </section>
 
-    <!-- LISTA DE RESERVAS -->
+    <!-- LISTA -->
     <section class="card">
       <h3>
         Próximas reservas
@@ -103,9 +97,7 @@
           <select id="horario">
             <option value="">Seleccioná un horario</option>
           </select>
-          <small id="horarioAyuda" class="form-help">
-            Solo los sábados se puede elegir horario.
-          </small>
+          <small id="horarioAyuda" class="form-help">Solo los sábados se puede elegir horario.</small>
         </div>
 
         <div class="form-row">
@@ -128,14 +120,14 @@
           Saldo pendiente: <strong id="saldoTexto">$ 0</strong>
         </div>
 
-        <div class="form-group notas">
+        <div class="form-group">
           <label for="notas">Notas / observaciones</label>
           <textarea id="notas" rows="3" placeholder="Ej: Llega después de las 16hs..."></textarea>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-danger" id="btnEliminar" style="display:none">Eliminar</button>
+        <button class="btn-danger" id="btnEliminar" style="display:none;">Eliminar</button>
         <div class="footer-right">
           <button class="btn-cancel" id="btnCancelar">Cancelar</button>
           <button class="btn-success" id="btnGuardar">Guardar reserva</button>
