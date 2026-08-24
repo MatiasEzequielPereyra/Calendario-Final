@@ -1,565 +1,289 @@
 :root {
-
   --bg: #f4f6f9;
-
   --card: #ffffff;
-
   --primary: #2d6a4f;
-
   --primary-dark: #1b4332;
-
   --accent: #40916c;
-
   --danger: #e63946;
-
   --danger-dark: #c1121f;
-
   --text: #1d3557;
-
   --muted: #6c757d;
-
   --border: #dee2e6;
-
   --reserved: #e63946;
-
   --pending: #e65100;
-
 }
-
-
-/* =========================
-   RESET
-========================= */
 
 * {
-
   box-sizing: border-box;
-
   margin: 0;
-
   padding: 0;
-
+  -webkit-tap-highlight-color: transparent;
 }
-
 
 body {
-
-  font-family:
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    sans-serif;
-
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
-
   color: var(--text);
-
   line-height: 1.5;
-
   min-height: 100vh;
-
+  -webkit-font-smoothing: antialiased;
 }
-
 
 /* =========================
    HEADER
 ========================= */
-
 header {
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--primary),
-      var(--primary-dark)
-    );
-
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-
-  padding: 1.2rem 1.5rem;
-
+  padding: 1rem 1.2rem;
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
   flex-wrap: wrap;
-
-  gap: 1rem;
-
-  box-shadow:
-    0 2px 8px rgba(0,0,0,0.15);
-
+  gap: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-
 
 header h1 {
-
-  font-size: 1.4rem;
-
+  font-size: 1.2rem;
   font-weight: 600;
-
 }
-
 
 .header-actions {
-
   display: flex;
-
-  gap: 0.6rem;
-
-  flex-wrap: wrap;
-
+  gap: 0.5rem;
 }
-
 
 /* =========================
    BUTTONS
 ========================= */
-
 button {
-
   cursor: pointer;
-
   border: none;
-
-  border-radius: 8px;
-
-  padding: 0.55rem 1rem;
-
-  font-size: 0.9rem;
-
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
-
   transition: all 0.2s;
-
+  font-family: inherit;
 }
-
 
 .btn-primary {
-
   background: white;
-
   color: var(--primary);
-
 }
-
 
 .btn-primary:hover {
-
   background: #f0f0f0;
-
 }
-
 
 .btn-success {
-
   background: var(--accent);
-
   color: white;
-
 }
-
 
 .btn-success:hover {
-
   background: var(--primary);
-
 }
-
 
 .btn-danger {
-
   background: var(--danger);
-
   color: white;
-
 }
-
 
 .btn-danger:hover {
-
   background: var(--danger-dark);
-
 }
-
 
 .btn-cancel {
-
   background: #e9ecef;
-
   color: var(--text);
-
 }
-
 
 .btn-cancel:hover {
-
   background: #dee2e6;
-
 }
-
 
 /* =========================
    MAIN
 ========================= */
-
 main {
-
   max-width: 1100px;
-
   margin: 0 auto;
-
-  padding: 1.5rem;
-
+  padding: 1.2rem;
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    340px;
-
-  gap: 1.5rem;
-
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.2rem;
 }
-
-
-@media (max-width: 900px) {
-
-  main {
-
-    grid-template-columns: 1fr;
-
-  }
-
-}
-
 
 /* =========================
    CARD
 ========================= */
-
 .card {
-
   background: var(--card);
-
-  border-radius: 12px;
-
-  box-shadow:
-    0 2px 12px rgba(0,0,0,0.06);
-
-  padding: 1.25rem;
-
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 1.2rem;
 }
-
 
 /* =========================
    CONFIG ALERT
 ========================= */
-
 .alerta-config {
-
   background: #fff3cd;
-
   border: 1px solid #ffc107;
-
   color: #856404;
-
   padding: 1rem;
-
-  border-radius: 8px;
-
+  border-radius: 10px;
   margin-bottom: 1rem;
-
   font-size: 0.9rem;
-
 }
-
 
 .hidden {
-
   display: none !important;
-
 }
-
 
 /* =========================
-   CALENDAR HEADER
+   CALENDAR
 ========================= */
-
 .calendar-header {
-
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
   margin-bottom: 1rem;
-
 }
-
 
 .calendar-header h2 {
-
-  font-size: 1.25rem;
-
+  font-size: 1.2rem;
   text-transform: capitalize;
-
 }
-
 
 .nav-btn {
-
   background: var(--bg);
-
   color: var(--text);
-
-  width: 36px;
-
-  height: 36px;
-
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
-  font-size: 1.1rem;
-
+  font-size: 1.2rem;
   padding: 0;
-
 }
-
 
 .nav-btn:hover {
-
   background: var(--border);
-
 }
-
-
-/* =========================
-   WEEKDAYS
-========================= */
 
 .weekdays {
-
   display: grid;
-
-  grid-template-columns:
-    repeat(7, 1fr);
-
+  grid-template-columns: repeat(7, 1fr);
   text-align: center;
-
-  font-size: 0.8rem;
-
+  font-size: 0.75rem;
   font-weight: 600;
-
   color: var(--muted);
-
   margin-bottom: 0.5rem;
-
 }
-
-
-/* =========================
-   DAYS
-========================= */
 
 .days {
-
   display: grid;
-
-  grid-template-columns:
-    repeat(7, 1fr);
-
-  gap: 4px;
-
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
 }
-
 
 .day {
-
   aspect-ratio: 1;
-
-  border-radius: 8px;
-
+  border-radius: 12px;
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
-
-  font-size: 0.9rem;
-
+  font-size: 0.95rem;
   cursor: pointer;
-
-  position: relative;
-
   background: #f8f9fa;
-
   transition: all 0.15s;
-
   border: 2px solid transparent;
-
+  min-height: 48px;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-
-.day:hover:not(.empty) {
-
+.day:hover:not(.empty):not(.day-disabled) {
   border-color: var(--accent);
-
   background: #e8f5e9;
-
 }
-
 
 .day.empty {
-
   background: transparent;
-
   cursor: default;
-
 }
-
 
 .day.today {
-
   border-color: var(--primary);
-
   font-weight: 700;
-
+  background: #e8f5e9;
 }
 
-
-.day.reserved {
-
-  background: #ffebee;
-
-  color: var(--reserved);
-
-  font-weight: 600;
-
+.day-number {
+  display: block;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
-
-.day.partial {
-
-  background: #fff3e0;
-
-  color: var(--pending);
-
-  font-weight: 600;
-
-}
-
-
-.day .dot {
-
-  width: 6px;
-
-  height: 6px;
-
+.day-dot {
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-
-  margin-top: 2px;
-
+  margin-top: 5px;
 }
 
-
-.day.reserved .dot {
-
-  background: var(--reserved);
-
+.day-dot.disponible {
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
 }
 
-
-.day.partial .dot {
-
-  background: var(--pending);
-
+.day-dot.ocupado {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
 }
 
+.day-disabled {
+  opacity: 0.38;
+  cursor: not-allowed !important;
+  background: #f1f1f1;
+}
 
 /* =========================
    LEYENDA
 ========================= */
-
 .leyenda {
-
   display: flex;
-
-  gap: 1rem;
-
-  font-size: 0.8rem;
-
-  margin-top: 1rem;
-
+  gap: 1.2rem;
+  font-size: 0.85rem;
+  margin-top: 1.1rem;
   color: var(--muted);
-
   flex-wrap: wrap;
-
+  justify-content: center;
 }
-
 
 .leyenda span {
-
   display: flex;
-
   align-items: center;
-
-  gap: 0.35rem;
-
+  gap: 0.4rem;
 }
-
 
 .cuadro {
-
-  width: 14px;
-
-  height: 14px;
-
-  border-radius: 3px;
-
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
 }
-
-
-.reservado-color {
-
-  background: #ffebee;
-
-  border: 1px solid #e63946;
-
-}
-
-
-.pendiente-color {
-
-  background: #fff3e0;
-
-  border: 1px solid #e65100;
-
-}
-
-
-.disponible-color {
-
-  background: #f8f9fa;
-
-  border: 1px solid #ccc;
-
-}
-
 
 /* =========================
    LISTA RESERVAS
 ========================= */
-
 .contador {
   font-size: 0.85rem;
   color: var(--muted);
@@ -570,35 +294,17 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  max-height: 520px;          /* misma altura aproximada del calendario */
+  max-height: 520px;
   overflow-y: auto;
   margin-top: 1rem;
   padding-right: 4px;
-}
-
-/* Scroll más limpio */
-.reservas-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.reservas-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.reservas-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.reservas-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  -webkit-overflow-scrolling: touch;
 }
 
 .reserva-item {
   background: #f8f9fa;
-  border-radius: 10px;
-  padding: 0.85rem;
+  border-radius: 12px;
+  padding: 0.9rem;
   border-left: 4px solid var(--reserved);
   cursor: pointer;
   transition: all 0.15s;
@@ -608,590 +314,283 @@ main {
   border-top: 0;
   border-right: 0;
   border-bottom: 0;
+  font-family: inherit;
 }
 
 .reserva-item:hover {
   background: #eef2f5;
-  transform: translateX(2px);
+}
+
+.reserva-item .nombre {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.reserva-item .fechas {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0.25rem 0;
+}
+
+.montos {
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  margin-top: 0.3rem;
 }
 
 /* =========================
    BADGES
 ========================= */
-
 .badge {
-
   display: inline-block;
-
-  padding: 0.15rem 0.45rem;
-
-  border-radius: 4px;
-
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
   font-size: 0.72rem;
-
   font-weight: 600;
-
 }
-
 
 .badge-ok {
-
   background: #d8f3dc;
-
   color: #1b4332;
-
 }
-
 
 .badge-pendiente {
-
   background: #ffe5e5;
-
   color: #9b2226;
-
 }
-
 
 .badge-parcial {
-
   background: #fff3cd;
-
   color: #856404;
-
 }
-
 
 /* =========================
    EMPTY
 ========================= */
-
 .empty-state {
-
   text-align: center;
-
   color: var(--muted);
-
   padding: 2rem 1rem;
-
-  font-size: 0.9rem;
-
+  font-size: 0.95rem;
 }
-
 
 /* =========================
    MODAL
 ========================= */
-
 .modal-overlay {
-
   position: fixed;
-
   inset: 0;
-
-  background: rgba(0,0,0,0.45);
-
+  background: rgba(0,0,0,0.5);
   display: none;
-
-  align-items: center;
-
+  align-items: flex-end;
   justify-content: center;
-
   z-index: 100;
-
-  padding: 1rem;
-
+  padding: 0;
 }
-
 
 .modal-overlay.active {
-
   display: flex;
-
 }
-
 
 .modal {
-
   background: white;
-
-  border-radius: 14px;
-
+  border-radius: 18px 18px 0 0;
   width: 100%;
-
-  max-width: 480px;
-
-  max-height: 90vh;
-
+  max-width: 500px;
+  max-height: 92vh;
   overflow-y: auto;
-
-  box-shadow:
-    0 10px 40px rgba(0,0,0,0.2);
-
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.2);
+  -webkit-overflow-scrolling: touch;
 }
-
 
 .modal-header {
-
   padding: 1.1rem 1.3rem;
-
-  border-bottom:
-    1px solid var(--border);
-
+  border-bottom: 1px solid var(--border);
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
 }
-
 
 .modal-header h3 {
-
   font-size: 1.15rem;
-
 }
-
 
 .close-btn {
-
   background: transparent;
-
-  font-size: 1.5rem;
-
+  font-size: 1.6rem;
   padding: 0.2rem 0.5rem;
-
   color: var(--muted);
-
+  line-height: 1;
 }
-
 
 .close-btn:hover {
-
   color: var(--danger);
-
 }
-
-
-/* =========================
-   FORM
-========================= */
 
 .modal-body {
-
   padding: 1.3rem;
-
 }
-
 
 .form-group {
-
-  margin-bottom: 1rem;
-
+  margin-bottom: 1.1rem;
 }
-
 
 .form-group label {
-
   display: block;
-
-  font-size: 0.85rem;
-
+  font-size: 0.88rem;
   font-weight: 600;
-
-  margin-bottom: 0.3rem;
-
+  margin-bottom: 0.35rem;
 }
-
 
 .form-group input,
-.form-group textarea {
-
-  width: 100%;
-
-  padding: 0.55rem 0.7rem;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 8px;
-
-  font-size: 0.95rem;
-
-  font-family: inherit;
-
-}
-
-
-.form-group input:focus,
-.form-group textarea:focus {
-
-  outline: none;
-
-  border-color: var(--accent);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(64,145,108,0.2);
-
-}
-
-
-.form-row {
-
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap: 0.8rem;
-
-}
-
-
-.form-check {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 0.5rem;
-
-  margin-top: 0.4rem;
-
-  margin-bottom: 1rem;
-
-}
-
-
-.form-check input {
-
-  width: auto;
-
-}
-
-
-.form-check label {
-
-  font-size: 0.85rem;
-
-  font-weight: 500;
-
-}
-
-
-/* =========================
-   SALDO
-========================= */
-
-.saldo-box {
-
-  background: #f1f8f4;
-
-  border-radius: 8px;
-
-  padding: 0.7rem 0.9rem;
-
-  margin-top: 0.5rem;
-
-  font-size: 0.9rem;
-
-}
-
-
-.saldo-box strong {
-
-  color: var(--primary);
-
-}
-
-
-/* =========================
-   MODAL FOOTER
-========================= */
-
-.modal-footer {
-
-  padding: 1rem 1.3rem;
-
-  border-top:
-    1px solid var(--border);
-
-  display: flex;
-
-  justify-content: space-between;
-
-  gap: 0.6rem;
-
-  flex-wrap: wrap;
-
-}
-
-
-.footer-right {
-
-  display: flex;
-
-  gap: 0.6rem;
-
-}
-
-
-@media (max-width: 500px) {
-
-  .form-row {
-
-    grid-template-columns: 1fr;
-
-  }
-
-  .modal-footer {
-
-    flex-direction: column;
-
-  }
-
-  .footer-right {
-
-    width: 100%;
-
-    justify-content: flex-end;
-
-  }
-
-}
-
-
-/* =========================
-   TOAST
-========================= */
-
-.toast {
-
-  position: fixed;
-
-  bottom: 1.5rem;
-
-  right: 1.5rem;
-
-  background: var(--primary-dark);
-
-  color: white;
-
-  padding: 0.8rem 1.2rem;
-
-  border-radius: 8px;
-
-  font-size: 0.9rem;
-
-  opacity: 0;
-
-  transform:
-    translateY(20px);
-
-  transition: all 0.3s;
-
-  z-index: 200;
-
-}
-
-
-.toast.show {
-
-  opacity: 1;
-
-  transform:
-    translateY(0);
-
-}
-/* =========================
-   LOGIN / SESION
-========================= */
-
-.btn-logout {
-  background: rgba(255,255,255,0.14);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-}
-
-.btn-logout:hover {
-  background: rgba(255,255,255,0.24);
-}
-
+.form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 0.55rem 0.7rem;
+  padding: 0.7rem 0.85rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: 10px;
+  font-size: 1rem;
   font-family: inherit;
   background: white;
+  -webkit-appearance: none;
 }
 
+.form-group input:focus,
+.form-group textarea:focus,
 .form-group select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(64,145,108,0.2);
 }
 
-.campo-ayuda {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--muted);
-  font-size: 0.75rem;
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
 }
 
-.horario-badge {
-  display: inline-block;
-  margin-top: 0.2rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-  background: #e8f5e9;
-  color: var(--primary-dark);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.login-page {
+.form-check {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f4f6f9, #e8f5e9);
+  gap: 0.55rem;
+  margin: 0.6rem 0 1.1rem;
 }
 
-.login-container {
-  width: 100%;
-  max-width: 420px;
+.form-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.form-help {
   display: block;
-  padding: 0;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
-.login-card {
+.saldo-box {
+  background: #f1f8f4;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.saldo-box strong {
+  color: var(--primary);
+}
+
+.modal-footer {
+  padding: 1rem 1.3rem 1.4rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
   background: white;
-  border-radius: 18px;
-  padding: 2rem;
-  box-shadow: 0 15px 45px rgba(0,0,0,0.12);
+}
+
+.footer-right {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* =========================
+   TOAST
+========================= */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--primary-dark);
+  color: white;
+  padding: 0.85rem 1.4rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 200;
+  max-width: 90%;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
-.login-logo {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
-.login-card h1 {
-  color: var(--primary-dark);
-  margin-bottom: 0.25rem;
-}
-
-.login-card > p {
-  color: var(--muted);
-  margin-bottom: 1.5rem;
-}
-
-.login-card form {
-  text-align: left;
-}
-
-.login-button {
-  width: 100%;
-  padding: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.login-error {
-  color: var(--danger-dark);
-  font-size: 0.85rem;
-  min-height: 1.3rem;
-  margin-top: 0.75rem;
-  text-align: center;
-}
-
-/* === HORARIOS POR TURNO === */
-.day-disabled { opacity: .45; cursor: not-allowed !important; }
-.day-slots { display:flex; flex-direction:column; gap:3px; margin-top:6px; width:100%; }
-.day-slot { font-size:10px; line-height:1.2; padding:3px 4px; border-radius:5px; font-weight:600; text-align:center; }
-.day-slot.ocupado { background:#fee2e2; color:#991b1b; }
-.day-slot.libre { background:#dcfce7; color:#166534; }
-.form-help { display:block; margin-top:6px; font-size:12px; color:#6b7280; }
-select#horario { width:100%; }
 /* =========================================================
-   ADAPTACIÓN MÓVIL
+   RESPONSIVE - MÓVIL / iPHONE
 ========================================================= */
 
 @media (max-width: 900px) {
   main {
     grid-template-columns: 1fr;
     padding: 1rem;
-    gap: 1.2rem;
+    gap: 1rem;
   }
 
+  .reservas-list {
+    max-height: 380px;
+  }
+}
+
+@media (max-width: 600px) {
   header {
-    padding: 1rem;
+    padding: 0.9rem 1rem;
   }
 
   header h1 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+  }
+
+  .btn-primary {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.9rem;
   }
 
   .card {
     padding: 1rem;
-  }
-
-  /* Calendario más usable en celular */
-  .day {
-    aspect-ratio: auto;
-    min-height: 72px;
-    padding: 4px 2px;
-  }
-
-  .day-number {
-    font-size: 0.85rem;
-  }
-
-  .day-slots {
-    gap: 3px;
-    margin-top: 4px;
-  }
-
-  .day-slot {
-    font-size: 9px;
-    padding: 4px 2px;
-    border-radius: 6px;
-  }
-
-  .day-slot small {
-    font-size: 8px;
-  }
-
-  /* Lista de reservas */
-  .reservas-list {
-    max-height: 420px;
-  }
-
-  .reserva-item {
-    padding: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .btn-primary {
-    width: 100%;
+    border-radius: 12px;
   }
 
   .calendar-header h2 {
     font-size: 1.1rem;
+  }
+
+  .nav-btn {
+    width: 38px;
+    height: 38px;
   }
 
   .weekdays {
@@ -1199,21 +598,25 @@ select#horario { width:100%; }
   }
 
   .day {
-    min-height: 68px;
+    min-height: 46px;
+    border-radius: 10px;
+    font-size: 0.9rem;
   }
 
-  .day-slot {
-    font-size: 8.5px;
-    padding: 3px 1px;
+  .day-dot {
+    width: 8px;
+    height: 8px;
+    margin-top: 4px;
+  }
+
+  .leyenda {
+    font-size: 0.8rem;
+    gap: 1rem;
   }
 
   .modal {
-    max-width: 100%;
-    margin: 0 0.5rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
+    border-radius: 16px 16px 0 0;
+    max-height: 94vh;
   }
 
   .form-row {
@@ -1222,19 +625,29 @@ select#horario { width:100%; }
 
   .modal-footer {
     flex-direction: column-reverse;
-    gap: 0.5rem;
   }
 
   .footer-right {
     width: 100%;
-    display: flex;
     flex-direction: column-reverse;
-    gap: 0.5rem;
   }
 
   .btn-success,
   .btn-cancel,
   .btn-danger {
     width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  header h1 {
+    font-size: 1rem;
+  }
+
+  .day {
+    min-height: 42px;
+    font-size: 0.85rem;
   }
 }
