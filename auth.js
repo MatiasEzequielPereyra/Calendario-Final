@@ -1,7 +1,6 @@
 /* =========================================================
-   AUTENTICACION DEL PANEL
-   Ahora usa localStorage → queda guardado en el teléfono
-   hasta que se cierre sesión manualmente.
+   AUTENTICACION - Quinta MeWen
+   Usa localStorage → queda guardado en el teléfono
 ========================================================= */
 
 const AUTH_USER = 'quintaMewen';
@@ -11,14 +10,14 @@ const AUTH_KEY = 'quinta_mewen_auth';
 const Auth = {
   login(usuario, password) {
     if (usuario === AUTH_USER && password === AUTH_PASSWORD) {
-      localStorage.setItem(AUTH_KEY, '1');   // ← cambiado a localStorage
+      localStorage.setItem(AUTH_KEY, '1');
       return true;
     }
     return false;
   },
 
   estaAutenticado() {
-    return localStorage.getItem(AUTH_KEY) === '1';  // ← cambiado a localStorage
+    return localStorage.getItem(AUTH_KEY) === '1';
   },
 
   logout() {
@@ -27,7 +26,7 @@ const Auth = {
   }
 };
 
-// Redirigir al login si no está autenticado
+// Redirección si no está logueado
 if (
   !window.location.pathname.endsWith('/login.html') &&
   !window.location.pathname.endsWith('login.html') &&
@@ -39,6 +38,6 @@ if (
 document.addEventListener('DOMContentLoaded', () => {
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
-    btnLogout.addEventListener('click', Auth.logout);
+    btnLogout.addEventListener('click', () => Auth.logout());
   }
 });
