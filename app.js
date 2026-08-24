@@ -1,9 +1,5 @@
 /* =========================================================
-   QUINTA MEWEN - RESERVAS
-   - Todos los días habilitados
-   - Solo los sábados se elige horario (día/noche)
-   - Sábados: dos puntos independientes
-   - Resto de días: un solo punto
+   QUINTA MEWEN - RESERVAS (versión final)
 ========================================================= */
 
 if (!Auth.estaAutenticado()) {
@@ -12,17 +8,14 @@ if (!Auth.estaAutenticado()) {
 
 const SUPABASE_URL = 'https://vebqlbcfjxnpryjdgfvq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xN-Z3i_sUAyB15QmoM67iw_y3Xisvqv';
-
 const DB_DATE_COLUMN = 'Fecha';
 
 const HORARIOS = {
   '10:00-17:00': '☀️ Día — 10:00 a 17:00',
   '22:00-05:00': '🌙 Noche — 22:00 a 05:00'
 };
-
 const HORARIO_FIJO = '10:00-17:00';
-
-const DIAS_PERMITIDOS = [0, 1, 2, 3, 4, 5, 6];
+const DIAS_PERMITIDOS = [0,1,2,3,4,5,6];
 const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 let supabaseClient = null;
@@ -32,14 +25,16 @@ let anioActual = new Date().getFullYear();
 let editandoId = null;
 
 function initSupabase() {
-  const alerta = document.getElementById('alertaConfig');
   try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return true;
-  } catch (error) {
-    console.error(error);
-    alerta.classList.remove('hidden');
-    alerta.innerHTML = '⚠️ Error inicializando Supabase. Revisá la consola.';
+  } catch (e) {
+    console.error(e);
+    const alerta = document.getElementById('alertaConfig');
+    if (alerta) {
+      alerta.classList.remove('hidden');
+      alerta.innerHTML = '⚠️ Error inicializando Supabase.';
+    }
     return false;
   }
 }
@@ -51,7 +46,7 @@ function normalizarFechaStr(valor) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   const d = new Date(str);
   if (isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function normalizarReserva(r) {
@@ -62,41 +57,36 @@ function normalizarReserva(r) {
   };
 }
 
-function escaparHTML(texto) {
-  if (texto === null || texto === undefined) return '';
-  return String(texto)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+function escaparHTML(t) {
+  if (t == null) return '';
+  return String(t)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
 }
 
-function formatearFecha(fechaStr) {
-  if (!fechaStr) return '';
-  const partes = String(fechaStr).split('-');
-  if (partes.length !== 3) return fechaStr;
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+function formatearFecha(f) {
+  if (!f) return '';
+  const p = String(f).split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : f;
 }
 
-function formatearMoneda(numero) {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0
-  }).format(numero || 0);
+function formatearMoneda(n) {
+  return new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:0 }).format(n || 0);
 }
 
-function mostrarToast(mensaje) {
-  const toast = document.getElementById('toast');
-  toast.textContent = mensaje;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+function mostrarToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 function fechaLocalDesdeInput(fechaStr) {
-  const [y, m, d] = fechaStr.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  const [y,m,d] = fechaStr.split('-').map(Number);
+  return new Date(y, m-1, d);
 }
 
 function esSabado(fechaStr) {
@@ -108,7 +98,7 @@ function diaPermitido(fechaStr) {
 }
 
 function nombreDia(fechaStr) {
-  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   return dias[fechaLocalDesdeInput(fechaStr).getDay()];
 }
 
@@ -128,25 +118,16 @@ function horarioOcupado(fecha, horario, ignorarId = null) {
   );
 }
 
-function horariosDisponibles(fecha, ignorarId = null) {
-  if (!diaPermitido(fecha)) return [];
-  if (esSabado(fecha)) {
-    return Object.keys(HORARIOS).filter(h => !horarioOcupado(fecha, h, ignorarId));
-  }
-  return horarioOcupado(fecha, HORARIO_FIJO, ignorarId) ? [] : [HORARIO_FIJO];
-}
-
 function hoyStr() {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
 }
 
 function parseFechaLocal(fechaStr) {
   if (!fechaStr) return null;
-  const partes = String(fechaStr).split('-');
-  if (partes.length !== 3) return null;
-  const [y, m, d] = partes.map(Number);
-  return new Date(y, m - 1, d);
+  const p = String(fechaStr).split('-');
+  if (p.length !== 3) return null;
+  return new Date(+p[0], +p[1]-1, +p[2]);
 }
 
 async function cargarReservas() {
@@ -158,21 +139,14 @@ async function cargarReservas() {
     .order(DB_DATE_COLUMN, { ascending: true });
 
   if (error) {
-    console.error('Error cargando reservas:', error);
+    console.error(error);
     document.getElementById('listaReservas').innerHTML = `
-      <div class="empty-state">
-        <strong>⚠️ Error cargando reservas</strong><br><br>
-        ${escaparHTML(error.message)}
-      </div>`;
+      <div class="empty-state">⚠️ Error cargando reservas<br>${escaparHTML(error.message)}</div>`;
     reservas = [];
-    renderCalendario();
-    renderLista();
-    return;
+  } else {
+    reservas = (data || []).map(normalizarReserva);
   }
 
-  reservas = (data || []).map(normalizarReserva);
-  
-  // Forzar actualización de ambas vistas
   renderCalendario();
   renderLista();
 }
@@ -183,19 +157,19 @@ function renderCalendario() {
   grid.innerHTML = '';
 
   const primerDia = new Date(anioActual, mesActual, 1);
-  let diaSemana = primerDia.getDay();
-  diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
+  let inicio = primerDia.getDay();
+  inicio = inicio === 0 ? 6 : inicio - 1;
   const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
   const hoy = hoyStr();
 
-  for (let i = 0; i < diaSemana; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'day empty';
-    grid.appendChild(empty);
+  for (let i = 0; i < inicio; i++) {
+    const e = document.createElement('div');
+    e.className = 'day empty';
+    grid.appendChild(e);
   }
 
   for (let d = 1; d <= diasEnMes; d++) {
-    const fecha = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const fecha = `${anioActual}-${String(mesActual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const permitido = diaPermitido(fecha);
     const esSab = esSabado(fecha);
     const reservasDia = reservasDeFecha(fecha);
@@ -205,137 +179,100 @@ function renderCalendario() {
     if (fecha === hoy) div.classList.add('today');
     if (!permitido) div.classList.add('day-disabled');
 
-    // Número del día
-    const numero = document.createElement('span');
-    numero.className = 'day-number';
-    numero.textContent = d;
-    div.appendChild(numero);
+    const num = document.createElement('span');
+    num.className = 'day-number';
+    num.textContent = d;
+    div.appendChild(num);
 
     if (permitido) {
-      const dotsContainer = document.createElement('div');
-      dotsContainer.className = 'day-dots';
+      const dots = document.createElement('div');
+      dots.className = 'day-dots';
 
       if (esSab) {
-        // ========== SÁBADO: dos puntos independientes ==========
-        const reservaDia = reservasDia.find(r => r.horario === '10:00-17:00');
-        const reservaNoche = reservasDia.find(r => r.horario === '22:00-05:00');
+        // Dos puntos
+        const resDia = reservasDia.find(r => r.horario === '10:00-17:00');
+        const resNoche = reservasDia.find(r => r.horario === '22:00-05:00');
 
-        // Punto del turno DÍA
-        const puntoDia = document.createElement('span');
-        puntoDia.className = `day-dot ${reservaDia ? 'ocupado' : 'disponible'}`;
-        puntoDia.title = reservaDia ? 'Turno Día: Reservado (tocar para editar)' : 'Turno Día: Disponible';
-        puntoDia.addEventListener('click', (e) => {
+        const p1 = document.createElement('span');
+        p1.className = `day-dot ${resDia ? 'ocupado' : 'disponible'}`;
+        p1.title = resDia ? 'Día ocupado - tocar para editar' : 'Día disponible';
+        p1.addEventListener('click', e => {
           e.stopPropagation();
-          if (reservaDia) {
-            abrirModalEditar(reservaDia.id);   // ← permite editar/borrar
-          } else {
-            abrirModalNueva(fecha, '10:00-17:00');
-          }
+          if (resDia) abrirModalEditar(resDia.id);
+          else abrirModalNueva(fecha, '10:00-17:00');
         });
-        dotsContainer.appendChild(puntoDia);
+        dots.appendChild(p1);
 
-        // Punto del turno NOCHE
-        const puntoNoche = document.createElement('span');
-        puntoNoche.className = `day-dot ${reservaNoche ? 'ocupado' : 'disponible'}`;
-        puntoNoche.title = reservaNoche ? 'Turno Noche: Reservado (tocar para editar)' : 'Turno Noche: Disponible';
-        puntoNoche.addEventListener('click', (e) => {
+        const p2 = document.createElement('span');
+        p2.className = `day-dot ${resNoche ? 'ocupado' : 'disponible'}`;
+        p2.title = resNoche ? 'Noche ocupada - tocar para editar' : 'Noche disponible';
+        p2.addEventListener('click', e => {
           e.stopPropagation();
-          if (reservaNoche) {
-            abrirModalEditar(reservaNoche.id); // ← permite editar/borrar
-          } else {
-            abrirModalNueva(fecha, '22:00-05:00');
-          }
+          if (resNoche) abrirModalEditar(resNoche.id);
+          else abrirModalNueva(fecha, '22:00-05:00');
         });
-        dotsContainer.appendChild(puntoNoche);
+        dots.appendChild(p2);
 
-        div.appendChild(dotsContainer);
-
-        // Click general en el día (si no se tocó un punto)
         div.addEventListener('click', () => {
-          if (reservaDia && reservaNoche) {
-            // Ambos ocupados → abrir el primero
-            abrirModalEditar(reservaDia.id);
-          } else {
-            abrirModalNueva(fecha);
-          }
+          if (resDia && resNoche) abrirModalEditar(resDia.id);
+          else abrirModalNueva(fecha);
         });
-
       } else {
-        // ========== RESTO DE DÍAS: un solo punto ==========
-        const reserva = reservasDia.find(r => r.horario === HORARIO_FIJO);
-
-        const punto = document.createElement('span');
-        punto.className = `day-dot ${reserva ? 'ocupado' : 'disponible'}`;
-        punto.title = reserva ? 'Reservado (tocar para editar)' : 'Disponible';
-        
-        punto.addEventListener('click', (e) => {
+        // Un punto
+        const res = reservasDia.find(r => r.horario === HORARIO_FIJO);
+        const p = document.createElement('span');
+        p.className = `day-dot ${res ? 'ocupado' : 'disponible'}`;
+        p.title = res ? 'Ocupado - tocar para editar' : 'Disponible';
+        p.addEventListener('click', e => {
           e.stopPropagation();
-          if (reserva) {
-            abrirModalEditar(reserva.id);     // ← permite editar/borrar
-          } else {
-            abrirModalNueva(fecha, HORARIO_FIJO);
-          }
+          if (res) abrirModalEditar(res.id);
+          else abrirModalNueva(fecha, HORARIO_FIJO);
         });
-
-        dotsContainer.appendChild(punto);
-        div.appendChild(dotsContainer);
+        dots.appendChild(p);
 
         div.addEventListener('click', () => {
-          if (reserva) {
-            abrirModalEditar(reserva.id);
-          } else {
-            abrirModalNueva(fecha, HORARIO_FIJO);
-          }
+          if (res) abrirModalEditar(res.id);
+          else abrirModalNueva(fecha, HORARIO_FIJO);
         });
       }
+      div.appendChild(dots);
     } else {
-      div.addEventListener('click', () => {
-        mostrarToast('Este día no está habilitado.');
-      });
+      div.addEventListener('click', () => mostrarToast('Día no habilitado'));
     }
 
     grid.appendChild(div);
   }
 }
 
-function cambiarMes(direccion) {
-  mesActual += direccion;
+function cambiarMes(dir) {
+  mesActual += dir;
   if (mesActual > 11) { mesActual = 0; anioActual++; }
   if (mesActual < 0) { mesActual = 11; anioActual--; }
   renderCalendario();
 }
 
 function renderLista() {
-  const contenedor = document.getElementById('listaReservas');
-  if (!contenedor) return;
-
+  const cont = document.getElementById('listaReservas');
   const hoy = parseFechaLocal(hoyStr());
 
   const visibles = reservas
     .filter(r => {
-      if (!r.fecha) return false;
-      const fechaReserva = parseFechaLocal(r.fecha);
-      if (!fechaReserva) return false;
-      return fechaReserva >= hoy;
+      const f = parseFechaLocal(r.fecha);
+      return f && f >= hoy;
     })
-    .sort((a, b) => {
-      const cmpFecha = a.fecha.localeCompare(b.fecha);
-      if (cmpFecha !== 0) return cmpFecha;
-      return String(a.horario || '').localeCompare(String(b.horario || ''));
-    });
+    .sort((a,b) => a.fecha.localeCompare(b.fecha) || String(a.horario).localeCompare(String(b.horario)));
 
-  const contador = document.getElementById('contadorReservas');
-  if (contador) contador.textContent = `(${visibles.length})`;
+  document.getElementById('contadorReservas').textContent = `(${visibles.length})`;
 
   if (!visibles.length) {
-    contenedor.innerHTML = '<div class="empty-state">No hay reservas próximas.</div>';
+    cont.innerHTML = '<div class="empty-state">No hay reservas próximas.</div>';
     return;
   }
 
-  contenedor.innerHTML = visibles.map(reserva => {
-    const saldo = calcularSaldoReserva(reserva);
-    let badge;
-    if (reserva.sena_pagada || Number(reserva.sena) === 0) {
+  cont.innerHTML = visibles.map(r => {
+    const saldo = calcularSaldoReserva(r);
+    let badge = '';
+    if (r.sena_pagada || Number(r.sena) === 0) {
       badge = saldo <= 0
         ? '<span class="badge badge-ok">Pagado</span>'
         : `<span class="badge badge-pendiente">Falta ${formatearMoneda(saldo)}</span>`;
@@ -343,32 +280,27 @@ function renderLista() {
       badge = '<span class="badge badge-parcial">Seña pendiente</span>';
     }
 
-    const horarioTexto = HORARIOS[reserva.horario]
-      ? HORARIOS[reserva.horario].replace(/^☀️ |^🌙 /, '')
-      : (reserva.horario || 'No definido');
+    const textoHorario = HORARIOS[r.horario]
+      ? HORARIOS[r.horario].replace(/^☀️ |^🌙 /, '')
+      : (r.horario || 'No definido');
+    const icono = r.horario === '22:00-05:00' ? '🌙' : '☀️';
 
-    const icono = reserva.horario === '22:00-05:00' ? '🌙' : '☀️';
-
-    return `<button type="button" class="reserva-item" data-id="${escaparHTML(reserva.id)}">
-      <div class="nombre">${escaparHTML(reserva.nombre || 'Sin nombre')}</div>
-      <div class="fechas">${formatearFecha(reserva.fecha)} · <strong>${icono} ${escaparHTML(horarioTexto)}</strong></div>
-      <div class="montos">
-        <span>Total: ${formatearMoneda(reserva.total)}</span>
-        ${badge}
-      </div>
+    return `<button type="button" class="reserva-item" data-id="${escaparHTML(r.id)}">
+      <div class="nombre">${escaparHTML(r.nombre || 'Sin nombre')}</div>
+      <div class="fechas">${formatearFecha(r.fecha)} · <strong>${icono} ${escaparHTML(textoHorario)}</strong></div>
+      <div class="montos"><span>Total: ${formatearMoneda(r.total)}</span>${badge}</div>
     </button>`;
   }).join('');
 
-  // Volver a asignar los eventos de click
-  contenedor.querySelectorAll('.reserva-item').forEach(el => {
+  cont.querySelectorAll('.reserva-item').forEach(el => {
     el.addEventListener('click', () => abrirModalEditar(el.dataset.id));
   });
 }
 
-function calcularSaldoReserva(reserva) {
-  const total = Number(reserva.total) || 0;
-  const sena = Number(reserva.sena) || 0;
-  return reserva.sena_pagada ? Math.max(0, total - sena) : total;
+function calcularSaldoReserva(r) {
+  const total = Number(r.total) || 0;
+  const sena = Number(r.sena) || 0;
+  return r.sena_pagada ? Math.max(0, total - sena) : total;
 }
 
 function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
@@ -385,18 +317,15 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   }
 
   if (esSabado(fecha)) {
-    // Sábado → se puede elegir
     select.disabled = false;
     if (ayuda) {
       ayuda.textContent = editandoId
         ? 'Podés cambiar el horario o eliminar la reserva.'
-        : 'Sábado: podés elegir turno día o noche.';
+        : 'Sábado: elegí turno día o noche.';
     }
 
     Object.entries(HORARIOS).forEach(([valor, texto]) => {
-      // Solo se marca como ocupado si lo tiene OTRO reserva (no la que estamos editando)
       const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
-
       const option = document.createElement('option');
       option.value = valor;
 
@@ -408,31 +337,48 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
         option.disabled = false;
       }
 
-      // Si es el horario de la reserva que estamos editando, lo seleccionamos sí o sí
+      // El horario actual de la reserva que editamos NUNCA se deshabilita
       if (valor === horarioSeleccionado) {
         option.selected = true;
-        option.disabled = false; // ← muy importante: nunca deshabilitar el actual
-        option.textContent = texto; // sin la palabra OCUPADO
+        option.disabled = false;
+        option.textContent = texto;
       }
-
       select.appendChild(option);
     });
-
   } else {
-    // Días que no son sábado → turno fijo
     select.disabled = true;
     if (ayuda) {
       ayuda.textContent = editandoId
-        ? 'Turno día. Podés modificar los datos o eliminar la reserva.'
-        : 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
+        ? 'Turno día. Podés modificar o eliminar la reserva.'
+        : 'Solo los sábados se elige horario. Turno día (10:00-17:00).';
     }
-
     const option = document.createElement('option');
     option.value = HORARIO_FIJO;
     option.textContent = HORARIOS[HORARIO_FIJO];
     option.selected = true;
     select.appendChild(option);
   }
+}
+
+function abrirModalNueva(fecha = '', horario = '') {
+  editandoId = null;
+  document.getElementById('modalTitulo').textContent = 'Nueva reserva';
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('reservaId').value = '';
+  document.getElementById('nombre').value = '';
+  document.getElementById('telefono').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('fecha').value = fecha;
+  document.getElementById('total').value = '';
+  document.getElementById('sena').value = '';
+  document.getElementById('senaPagada').checked = false;
+  document.getElementById('notas').value = '';
+
+  const horarioFinal = esSabado(fecha) ? (horario || '10:00-17:00') : HORARIO_FIJO;
+  actualizarOpcionesHorario(fecha, horarioFinal);
+  calcularSaldo();
+  document.getElementById('modal').classList.add('active');
+  document.getElementById('nombre').focus();
 }
 
 function abrirModalEditar(id) {
@@ -442,38 +388,8 @@ function abrirModalEditar(id) {
     return;
   }
 
-  editandoId = id; // ← se setea ANTES de todo
-
-  document.getElementById('modalTitulo').textContent = 'Editar reserva';
-  document.getElementById('btnEliminar').style.display = 'inline-block';
-  document.getElementById('reservaId').value = reserva.id;
-  document.getElementById('nombre').value = reserva.nombre || '';
-  document.getElementById('telefono').value = reserva.telefono || '';
-  document.getElementById('email').value = reserva.email || '';
-  document.getElementById('fecha').value = reserva.fecha || '';
-  document.getElementById('total').value = reserva.total || '';
-  document.getElementById('sena').value = reserva.sena || '';
-  document.getElementById('senaPagada').checked = !!reserva.sena_pagada;
-  document.getElementById('notas').value = reserva.notas || '';
-
-  // Cargar horarios permitiendo el actual
-  actualizarOpcionesHorario(reserva.fecha || '', reserva.horario || '');
-  
-  // Forzar el valor del select
-  const selectHorario = document.getElementById('horario');
-  if (selectHorario) {
-    selectHorario.value = reserva.horario || HORARIO_FIJO;
-  }
-
-  calcularSaldo();
-  document.getElementById('modal').classList.add('active');
-}
-
-function abrirModalEditar(id) {
-  const reserva = buscarReservaPorId(id);
-  if (!reserva) return;
-
   editandoId = id;
+
   document.getElementById('modalTitulo').textContent = 'Editar reserva';
   document.getElementById('btnEliminar').style.display = 'inline-block';
   document.getElementById('reservaId').value = reserva.id;
@@ -488,6 +404,7 @@ function abrirModalEditar(id) {
 
   actualizarOpcionesHorario(reserva.fecha || '', reserva.horario || '');
   document.getElementById('horario').value = reserva.horario || HORARIO_FIJO;
+
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
 }
@@ -508,10 +425,7 @@ function calcularSaldo() {
 }
 
 async function guardarReserva() {
-if (horarioOcupado(fecha, horario, editandoId)) {
-  return alert('Ese turno ya está reservado por otra persona.');
-}
-  }
+  if (!supabaseClient) return alert('Sin conexión a Supabase');
 
   const nombre = document.getElementById('nombre').value.trim();
   const telefono = document.getElementById('telefono').value.trim();
@@ -520,15 +434,13 @@ if (horarioOcupado(fecha, horario, editandoId)) {
 
   if (!nombre) return alert('El nombre es obligatorio.');
   if (!fecha) return alert('La fecha es obligatoria.');
-  if (!diaPermitido(fecha)) return alert(`No se pueden crear reservas los ${nombreDia(fecha)}.`);
+  if (!diaPermitido(fecha)) return alert('Día no permitido.');
 
-  if (!esSabado(fecha)) {
-    horario = HORARIO_FIJO;
-  }
+  if (!esSabado(fecha)) horario = HORARIO_FIJO;
 
-  if (!horario || !HORARIOS[horario]) return alert('Elegí un horario de reserva.');
+  if (!horario || !HORARIOS[horario]) return alert('Elegí un horario.');
   if (horarioOcupado(fecha, horario, editandoId)) {
-    return alert('Ese turno ya está reservado.');
+    return alert('Ese turno ya está reservado por otra persona.');
   }
 
   const total = Number(document.getElementById('total').value) || 0;
@@ -555,58 +467,37 @@ if (horarioOcupado(fecha, horario, editandoId)) {
   }
 
   if (error) {
-    console.error('Error guardando:', error);
-    if (error.code === '23505') {
-      alert('Ese turno ya está reservado para esa fecha.');
-    } else {
-      alert(`Error al guardar:\n\n${error.message}`);
-    }
+    console.error(error);
+    alert(error.code === '23505' ? 'Ese turno ya está reservado.' : 'Error: ' + error.message);
     return;
   }
 
   const eraEdicion = !!editandoId;
   cerrarModal();
-  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
-
-  // Recarga forzada de todo
+  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada');
   await cargarReservas();
 }
 
 async function eliminarReserva() {
-  if (!editandoId) {
-    alert('No hay ninguna reserva seleccionada para eliminar.');
+  if (!editandoId) return alert('No hay reserva seleccionada.');
+  if (!supabaseClient) return alert('Sin conexión.');
+
+  if (!confirm('¿Seguro que querés eliminar esta reserva?\nEl turno quedará disponible.')) return;
+
+  const { error } = await supabaseClient
+    .from('reservas')
+    .delete()
+    .eq('id', editandoId);
+
+  if (error) {
+    console.error(error);
+    alert('Error al eliminar: ' + error.message);
     return;
   }
 
-  if (!supabaseClient) {
-    alert('No hay conexión con la base de datos.');
-    return;
-  }
-
-  const confirmar = confirm('¿Seguro que querés eliminar esta reserva?\n\nEl turno quedará nuevamente disponible.');
-  if (!confirmar) return;
-
-  try {
-    const { error } = await supabaseClient
-      .from('reservas')
-      .delete()
-      .eq('id', editandoId);
-
-    if (error) {
-      console.error('Error al eliminar:', error);
-      alert('Error al eliminar la reserva:\n\n' + error.message);
-      return;
-    }
-
-    // Éxito
-    mostrarToast('Reserva eliminada correctamente');
-    cerrarModal();
-    await cargarReservas(); // actualiza calendario + lista
-
-  } catch (err) {
-    console.error(err);
-    alert('Ocurrió un error inesperado al eliminar.');
-  }
+  mostrarToast('Reserva eliminada');
+  cerrarModal();
+  await cargarReservas();
 }
 
 // Eventos
@@ -623,14 +514,11 @@ document.getElementById('senaPagada').addEventListener('change', calcularSaldo);
 
 document.getElementById('fecha').addEventListener('change', e => {
   const fecha = e.target.value;
-  const reservaActual = editandoId ? buscarReservaPorId(editandoId) : null;
-  actualizarOpcionesHorario(fecha, reservaActual && reservaActual.fecha === fecha ? reservaActual.horario : '');
+  const actual = editandoId ? buscarReservaPorId(editandoId) : null;
+  actualizarOpcionesHorario(fecha, actual && actual.fecha === fecha ? actual.horario : '');
 });
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') cerrarModal();
-});
-
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target.id === 'modal') cerrarModal();
 });
