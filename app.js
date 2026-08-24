@@ -1,5 +1,5 @@
 /* =========================================================
-   QUINTA MEWEN - app.js (versión final estable)
+   QUINTA MEWEN - app.js (versión final)
 ========================================================= */
 
 const SUPABASE_URL = 'https://vebqlbcfjxnpryjdgfvq.supabase.co';
@@ -125,7 +125,6 @@ async function cargarReservas() {
     reservas = [];
   }
 
-  // Siempre actualizar ambas vistas
   renderCalendario();
   renderLista();
 }
@@ -169,7 +168,6 @@ function renderCalendario() {
     dots.className = 'day-dots';
 
     if (esSab) {
-      // ===== SÁBADO: dos puntos independientes =====
       const resDia = reservasDia.find(r => r.horario === '10:00-17:00');
       const resNoche = reservasDia.find(r => r.horario === '22:00-05:00');
 
@@ -193,15 +191,12 @@ function renderCalendario() {
       });
       dots.appendChild(p2);
 
-      // Click general → prioriza turno DÍA
       div.addEventListener('click', function() {
         if (resDia) abrirModalEditar(resDia.id);
         else if (resNoche) abrirModalEditar(resNoche.id);
         else abrirModalNueva(fecha, '10:00-17:00');
       });
-
     } else {
-      // ===== RESTO DE DÍAS: un solo punto =====
       const res = reservasDia.find(r => r.horario === HORARIO_FIJO || !r.horario);
 
       const p = document.createElement('span');
@@ -277,11 +272,23 @@ function renderLista() {
 
     const icono = r.horario === '22:00-05:00' ? '🌙' : '☀️';
 
-    html += '<button type="button" class="reserva-item" data-id="' + escaparHTML(r.id) + '">' +
-      '<div class="nombre">' + escaparHTML(r.nombre || 'Sin nombre') + '</div>' +
-      '<div class="fechas">' + formatearFecha(r.fecha) + ' · <strong>' + icono + ' ' + escaparHTML(textoH) + '</strong></div>' +
-      '<div class="montos"><span>Total: ' + formatearMoneda(total) + '</span>' + badge + '</div>' +
-      '</button>';
+    const notaHtml = r.notas
+      ? '<div class="nota-reserva">📝 ' + escaparHTML(r.notas) + '</div>'
+      : '';
+
+    html += `
+      <button type="button" class="reserva-item" data-id="${escaparHTML(r.id)}">
+        <div class="nombre">${escaparHTML(r.nombre || 'Sin nombre')}</div>
+        <div class="fechas">
+          ${formatearFecha(r.fecha)} · <strong>${icono} ${escaparHTML(textoH)}</strong>
+        </div>
+        <div class="montos">
+          <span>Total: ${formatearMoneda(total)}</span>
+          ${badge}
+        </div>
+        ${notaHtml}
+      </button>
+    `;
   });
 
   cont.innerHTML = html;
@@ -377,22 +384,18 @@ function abrirModalEditar(id) {
   document.getElementById('modal').classList.add('active');
 }
 
-// Cuando el usuario cambia el horario en el select
 function cambiarTurnoEnModal() {
   const fecha = document.getElementById('fecha').value;
   const nuevoHorario = document.getElementById('horario').value;
   if (!fecha || !nuevoHorario) return;
 
-  // Buscar si ya existe reserva para esa fecha + horario
   const existente = reservas.find(function(r) {
     return r.fecha === fecha && r.horario === nuevoHorario;
   });
 
   if (existente) {
-    // Existe → cargar esa reserva
     abrirModalEditar(existente.id);
   } else {
-    // No existe → modo nueva reserva con ese horario
     editandoId = null;
     document.getElementById('modalTitulo').textContent = 'Nueva reserva';
     document.getElementById('btnEliminar').style.display = 'none';
@@ -470,8 +473,6 @@ async function guardarReserva() {
   const eraEdicion = !!editandoId;
   cerrarModal();
   mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada');
-
-  // Importante: recargar todo (calendario + lista)
   await cargarReservas();
 }
 
@@ -519,7 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
     actualizarOpcionesHorario(fecha, esSabado(fecha) ? '10:00-17:00' : HORARIO_FIJO);
   });
 
-  // Cuando cambian el horario → carga la otra reserva o crea una nueva
   document.getElementById('horario').addEventListener('change', function() {
     cambiarTurnoEnModal();
   });
@@ -528,7 +528,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.target.id === 'modal') cerrarModal();
   });
 
-  // Arrancar
   renderCalendario();
   if (initSupabase()) {
     cargarReservas();
