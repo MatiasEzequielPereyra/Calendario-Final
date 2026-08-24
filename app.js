@@ -385,21 +385,47 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   }
 
   if (esSabado(fecha)) {
+    // Sábado → se puede elegir
     select.disabled = false;
-    if (ayuda) ayuda.textContent = 'Sábado: podés elegir turno día o noche.';
+    if (ayuda) {
+      ayuda.textContent = editandoId
+        ? 'Podés cambiar el horario o eliminar la reserva.'
+        : 'Sábado: podés elegir turno día o noche.';
+    }
 
     Object.entries(HORARIOS).forEach(([valor, texto]) => {
+      // Solo se marca como ocupado si lo tiene OTRO reserva (no la que estamos editando)
       const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
+
       const option = document.createElement('option');
       option.value = valor;
-      option.textContent = ocupadoPorOtro ? `${texto} — OCUPADO` : texto;
-      option.disabled = ocupadoPorOtro;
-      option.selected = valor === horarioSeleccionado;
+
+      if (ocupadoPorOtro) {
+        option.textContent = `${texto} — OCUPADO`;
+        option.disabled = true;
+      } else {
+        option.textContent = texto;
+        option.disabled = false;
+      }
+
+      // Si es el horario de la reserva que estamos editando, lo seleccionamos sí o sí
+      if (valor === horarioSeleccionado) {
+        option.selected = true;
+        option.disabled = false; // ← muy importante: nunca deshabilitar el actual
+        option.textContent = texto; // sin la palabra OCUPADO
+      }
+
       select.appendChild(option);
     });
+
   } else {
+    // Días que no son sábado → turno fijo
     select.disabled = true;
-    if (ayuda) ayuda.textContent = 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
+    if (ayuda) {
+      ayuda.textContent = editandoId
+        ? 'Turno día. Podés modificar los datos o eliminar la reserva.'
+        : 'Solo los sábados se elige horario. Este día es turno día (10:00-17:00).';
+    }
 
     const option = document.createElement('option');
     option.value = HORARIO_FIJO;
@@ -409,28 +435,38 @@ function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   }
 }
 
-function abrirModalNueva(fecha = '', horario = '') {
-  editandoId = null;
-  document.getElementById('modalTitulo').textContent = 'Nueva reserva';
-  document.getElementById('btnEliminar').style.display = 'none';
-  document.getElementById('reservaId').value = '';
-  document.getElementById('nombre').value = '';
-  document.getElementById('telefono').value = '';
-  document.getElementById('email').value = '';
-  document.getElementById('fecha').value = fecha;
-  document.getElementById('total').value = '';
-  document.getElementById('sena').value = '';
-  document.getElementById('senaPagada').checked = false;
-  document.getElementById('notas').value = '';
+function abrirModalEditar(id) {
+  const reserva = buscarReservaPorId(id);
+  if (!reserva) {
+    mostrarToast('No se encontró la reserva');
+    return;
+  }
 
-  const horarioFinal = esSabado(fecha)
-    ? (horario || horariosDisponibles(fecha)[0] || '')
-    : HORARIO_FIJO;
+  editandoId = id; // ← se setea ANTES de todo
 
-  actualizarOpcionesHorario(fecha, horarioFinal);
+  document.getElementById('modalTitulo').textContent = 'Editar reserva';
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('reservaId').value = reserva.id;
+  document.getElementById('nombre').value = reserva.nombre || '';
+  document.getElementById('telefono').value = reserva.telefono || '';
+  document.getElementById('email').value = reserva.email || '';
+  document.getElementById('fecha').value = reserva.fecha || '';
+  document.getElementById('total').value = reserva.total || '';
+  document.getElementById('sena').value = reserva.sena || '';
+  document.getElementById('senaPagada').checked = !!reserva.sena_pagada;
+  document.getElementById('notas').value = reserva.notas || '';
+
+  // Cargar horarios permitiendo el actual
+  actualizarOpcionesHorario(reserva.fecha || '', reserva.horario || '');
+  
+  // Forzar el valor del select
+  const selectHorario = document.getElementById('horario');
+  if (selectHorario) {
+    selectHorario.value = reserva.horario || HORARIO_FIJO;
+  }
+
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
-  document.getElementById('nombre').focus();
 }
 
 function abrirModalEditar(id) {
@@ -472,9 +508,9 @@ function calcularSaldo() {
 }
 
 async function guardarReserva() {
-  if (!supabaseClient) {
-    alert('Supabase no está conectado.');
-    return;
+if (horarioOcupado(fecha, horario, editandoId)) {
+  return alert('Ese turno ya está reservado por otra persona.');
+}
   }
 
   const nombre = document.getElementById('nombre').value.trim();
@@ -537,19 +573,40 @@ async function guardarReserva() {
 }
 
 async function eliminarReserva() {
-  if (!editandoId || !supabaseClient) return;
-  if (!confirm('¿Seguro que querés eliminar esta reserva?')) return;
-
-  const { error } = await supabaseClient.from('reservas').delete().eq('id', editandoId);
-  if (error) {
-    console.error(error);
-    alert(`Error al eliminar:\n\n${error.message}`);
+  if (!editandoId) {
+    alert('No hay ninguna reserva seleccionada para eliminar.');
     return;
   }
 
-  await cargarReservas();
-  cerrarModal();
-  mostrarToast('Reserva eliminada.');
+  if (!supabaseClient) {
+    alert('No hay conexión con la base de datos.');
+    return;
+  }
+
+  const confirmar = confirm('¿Seguro que querés eliminar esta reserva?\n\nEl turno quedará nuevamente disponible.');
+  if (!confirmar) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('reservas')
+      .delete()
+      .eq('id', editandoId);
+
+    if (error) {
+      console.error('Error al eliminar:', error);
+      alert('Error al eliminar la reserva:\n\n' + error.message);
+      return;
+    }
+
+    // Éxito
+    mostrarToast('Reserva eliminada correctamente');
+    cerrarModal();
+    await cargarReservas(); // actualiza calendario + lista
+
+  } catch (err) {
+    console.error(err);
+    alert('Ocurrió un error inesperado al eliminar.');
+  }
 }
 
 // Eventos
