@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso - Quinta MeWen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+  <main class="login-container">
+    <section class="login-card">
+      <div class="login-logo">🏡</div>
+      <h1>Quinta MeWen</h1>
+      <p>Panel de gestión de reservas</p>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="usuario">Usuario</label>
+          <input id="usuario" type="text" autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </div>
+
+        <button class="btn-success login-button" type="submit">Ingresar</button>
+        <div id="loginError" class="login-error"></div>
+      </form>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+  <script>
+    if (Auth.estaAutenticado()) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const usuario = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('password').value;
+      const error = document.getElementById('loginError');
+
+      if (Auth.login(usuario, password)) {
+        window.location.href = 'index.html';
+      } else {
+        error.textContent = 'Usuario o contraseña incorrectos.';
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+      }
+    });
+  </script>
+</body>
+</html>

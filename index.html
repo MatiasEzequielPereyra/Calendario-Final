@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Calendario de Reservas - Quinta MeWen</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <header>
+    <h1>🏡 Calendario de Reservas – Quinta MeWen</h1>
+
+    <div class="header-actions">
+      <button class="btn-primary" id="btnNuevaReserva">
+        + Nueva reserva
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- CALENDARIO -->
+    <section class="card">
+
+      <div id="alertaConfig" class="alerta-config hidden">
+        ⚠️ Hay un problema con la configuración de Supabase.
+      </div>
+
+      <div class="calendar-header">
+
+        <button class="nav-btn" id="btnMesAnterior">
+          ‹
+        </button>
+
+        <h2 id="mesAnio"></h2>
+
+        <button class="nav-btn" id="btnMesSiguiente">
+          ›
+        </button>
+
+      </div>
+
+      <div class="weekdays">
+        <div>Lun</div>
+        <div>Mar</div>
+        <div>Mié</div>
+        <div>Jue</div>
+        <div>Vie</div>
+        <div>Sáb</div>
+        <div>Dom</div>
+      </div>
+
+      <div class="days" id="diasGrid"></div>
+
+      <div class="leyenda">
+
+        <span>
+          <span class="cuadro reservado-color"></span>
+          Reservado
+        </span>
+
+        <span>
+          <span class="cuadro pendiente-color"></span>
+          Seña pendiente
+        </span>
+
+        <span>
+          <span class="cuadro disponible-color"></span>
+          Disponible
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- LISTA DE RESERVAS -->
+    <section class="card">
+
+      <h3>
+        Próximas reservas
+
+        <span
+          id="contadorReservas"
+          class="contador">
+        </span>
+      </h3>
+
+      <div
+        class="reservas-list"
+        id="listaReservas">
+
+        <div class="empty-state">
+          Cargando...
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- MODAL -->
+  <div
+    class="modal-overlay"
+    id="modal">
+
+    <div class="modal">
+
+      <div class="modal-header">
+
+        <h3 id="modalTitulo">
+          Nueva reserva
+        </h3>
+
+        <button
+          class="close-btn"
+          id="btnCerrarModal">
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <input
+          type="hidden"
+          id="reservaId">
+
+
+        <!-- NOMBRE -->
+        <div class="form-group">
+
+          <label for="nombre">
+            Nombre del huésped *
+          </label>
+
+          <input
+            type="text"
+            id="nombre"
+            placeholder="Ej: Juan Pérez">
+
+        </div>
+
+
+        <!-- TELEFONO / EMAIL -->
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="telefono">
+              Teléfono / WhatsApp *
+            </label>
+
+            <input
+              type="tel"
+              id="telefono"
+              placeholder="Ej: 11 2345-6789">
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="email">
+              Email
+            </label>
+
+            <input
+              type="email"
+              id="email"
+              placeholder="opcional">
+
+          </div>
+
+        </div>
+
+
+        <!-- FECHA -->
+        <div class="form-group">
+
+          <label for="fecha">
+            Fecha de la reserva *
+          </label>
+
+          <input
+            type="date"
+            id="fecha">
+
+        </div>
+
+        <!-- HORARIO -->
+        <div class="form-group">
+
+          <label for="horario">
+            Horario de la reserva *
+          </label>
+
+          <select id="horario">
+            <option value="">Seleccioná un horario</option>
+            <option value="10:00-17:00">☀️ Día — 10:00 a 17:00</option>
+            <option value="22:00-05:00">🌙 Noche — 22:00 a 05:00</option>
+          </select>
+
+          <small id="horarioAyuda" class="form-help">
+            Solo se permiten reservas viernes, sábado y domingo. Cada día admite ambos turnos.
+          </small>
+
+        </div>
+
+
+        <!-- DINERO -->
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="total">
+              Total a cobrar ($)
+            </label>
+
+            <input
+              type="number"
+              id="total"
+              min="0"
+              step="100"
+              placeholder="0">
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="sena">
+              Seña ($)
+            </label>
+
+            <input
+              type="number"
+              id="sena"
+              min="0"
+              step="100"
+              placeholder="0">
+
+          </div>
+
+        </div>
+
+
+        <!-- SEÑA PAGADA -->
+        <div class="form-check">
+
+          <input
+            type="checkbox"
+            id="senaPagada">
+
+          <label for="senaPagada">
+            La seña ya fue abonada
+          </label>
+
+        </div>
+
+
+        <!-- SALDO -->
+        <div class="saldo-box">
+
+          Saldo pendiente:
+
+          <strong id="saldoTexto">
+            $ 0
+          </strong>
+
+        </div>
+
+
+        <!-- NOTAS -->
+        <div class="form-group notas">
+
+          <label for="notas">
+            Notas / observaciones
+          </label>
+
+          <textarea
+            id="notas"
+            rows="3"
+            placeholder="Ej: Llega después de las 16hs, trae mascota..."></textarea>
+
+        </div>
+
+      </div>
+
+
+      <!-- FOOTER MODAL -->
+      <div class="modal-footer">
+
+        <button
+          class="btn-danger"
+          id="btnEliminar"
+          style="display:none">
+
+          Eliminar
+
+        </button>
+
+        <div class="footer-right">
+
+          <button
+            class="btn-cancel"
+            id="btnCancelar">
+
+            Cancelar
+
+          </button>
+
+          <button
+            class="btn-success"
+            id="btnGuardar">
+
+            Guardar reserva
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- TOAST -->
+  <div
+    class="toast"
+    id="toast">
+  </div>
+
+
+  <!-- APP -->
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
