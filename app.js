@@ -1,7 +1,7 @@
 /* =========================================================
    QUINTA MEWEN - RESERVAS
-   Dos turnos independientes por día (todos los días de la semana).
-   IMPORTANTE: la tabla existente usa la columna "Fecha" (F mayúscula).
+   Solo los sábados se elige horario (día/noche).
+   Resto de días: turno fijo de día (10:00-17:00).
 ========================================================= */
 
 if (!Auth.estaAutenticado()) {
@@ -18,8 +18,10 @@ const HORARIOS = {
   '22:00-05:00': '🌙 Noche — 22:00 a 05:00'
 };
 
-// Todos los días de la semana habilitados
-const DIAS_PERMITIDOS = [0, 1, 2, 3, 4, 5, 6]; // domingo a sábado
+const HORARIO_FIJO = '10:00-17:00'; // para días que no son sábado
+
+// Todos los días habilitados
+const DIAS_PERMITIDOS = [0, 1, 2, 3, 4, 5, 6];
 const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 let supabaseClient = null;
@@ -41,18 +43,11 @@ function initSupabase() {
   }
 }
 
-/** Normaliza cualquier fecha a YYYY-MM-DD */
 function normalizarFechaStr(valor) {
   if (!valor) return '';
   const str = String(valor).trim();
-
-  // Caso más común: viene con hora (ISO)
   if (str.includes('T')) return str.split('T')[0];
-
-  // Ya está en formato correcto
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-
-  // Último intento
   const d = new Date(str);
   if (isNaN(d.getTime())) return '';
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -103,6 +98,10 @@ function fechaLocalDesdeInput(fechaStr) {
   return new Date(y, m - 1, d);
 }
 
+function esSabado(fechaStr) {
+  return !!fechaStr && fechaLocalDesdeInput(fechaStr).getDay() === 6;
+}
+
 function diaPermitido(fechaStr) {
   return !!fechaStr && DIAS_PERMITIDOS.includes(fechaLocalDesdeInput(fechaStr).getDay());
 }
@@ -130,7 +129,11 @@ function horarioOcupado(fecha, horario, ignorarId = null) {
 
 function horariosDisponibles(fecha, ignorarId = null) {
   if (!diaPermitido(fecha)) return [];
-  return Object.keys(HORARIOS).filter(h => !horarioOcupado(fecha, h, ignorarId));
+  if (esSabado(fecha)) {
+    return Object.keys(HORARIOS).filter(h => !horarioOcupado(fecha, h, ignorarId));
+  }
+  // Días que no son sábado: solo el turno fijo
+  return horarioOcupado(fecha, HORARIO_FIJO, ignorarId) ? [] : [HORARIO_FIJO];
 }
 
 function hoyStr() {
@@ -143,7 +146,7 @@ function parseFechaLocal(fechaStr) {
   const partes = String(fechaStr).split('-');
   if (partes.length !== 3) return null;
   const [y, m, d] = partes.map(Number);
-  return new Date(y, m - 1, d); // hora 00:00 local
+  return new Date(y, m - 1, d);
 }
 
 async function cargarReservas() {
@@ -192,6 +195,7 @@ function renderCalendario() {
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const permitido = diaPermitido(fecha);
+    const esSab = esSabado(fecha);
     const reservasDia = reservasDeFecha(fecha);
 
     const div = document.createElement('div');
@@ -208,23 +212,42 @@ function renderCalendario() {
       const slots = document.createElement('div');
       slots.className = 'day-slots';
 
-      ['10:00-17:00', '22:00-05:00'].forEach(horario => {
-        const reserva = reservasDia.find(r => r.horario === horario);
+      if (esSab) {
+        // Sábado: mostrar ambos turnos
+        ['10:00-17:00', '22:00-05:00'].forEach(horario => {
+          const reserva = reservasDia.find(r => r.horario === horario);
+          const slot = document.createElement('button');
+          slot.type = 'button';
+          slot.className = `day-slot ${reserva ? 'ocupado' : 'libre'}`;
+          slot.innerHTML = reserva
+            ? `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small>Reservado</small>`
+            : `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small>Disponible</small>`;
+
+          slot.addEventListener('click', e => {
+            e.stopPropagation();
+            if (reserva) abrirModalEditar(reserva.id);
+            else abrirModalNueva(fecha, horario);
+          });
+          slots.appendChild(slot);
+        });
+      } else {
+        // Resto de días: solo turno fijo de día
+        const reserva = reservasDia.find(r => r.horario === HORARIO_FIJO);
         const slot = document.createElement('button');
         slot.type = 'button';
         slot.className = `day-slot ${reserva ? 'ocupado' : 'libre'}`;
         slot.innerHTML = reserva
-          ? `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small> Reservado</small>`
-          : `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small> Disponible</small>`;
+          ? `☀️ Día<small>Reservado</small>`
+          : `☀️ Día<small>Disponible</small>`;
 
         slot.addEventListener('click', e => {
           e.stopPropagation();
           if (reserva) abrirModalEditar(reserva.id);
-          else abrirModalNueva(fecha, horario);
+          else abrirModalNueva(fecha, HORARIO_FIJO);
         });
-
         slots.appendChild(slot);
-      });
+      }
+
       div.appendChild(slots);
     }
 
@@ -311,26 +334,42 @@ function calcularSaldoReserva(reserva) {
 
 function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   const select = document.getElementById('horario');
+  const ayuda = document.getElementById('horarioAyuda');
   if (!select) return;
 
   select.innerHTML = '<option value="">Seleccioná un horario</option>';
 
   if (!fecha || !diaPermitido(fecha)) {
     select.disabled = true;
+    if (ayuda) ayuda.textContent = 'Seleccioná una fecha válida.';
     return;
   }
 
-  select.disabled = false;
+  if (esSabado(fecha)) {
+    // Solo sábado: se puede elegir
+    select.disabled = false;
+    if (ayuda) ayuda.textContent = 'Sábado: podés elegir turno día o noche.';
 
-  Object.entries(HORARIOS).forEach(([valor, texto]) => {
-    const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
+    Object.entries(HORARIOS).forEach(([valor, texto]) => {
+      const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
+      const option = document.createElement('option');
+      option.value = valor;
+      option.textContent = ocupadoPorOtro ? `${texto} — OCUPADO` : texto;
+      option.disabled = ocupadoPorOtro;
+      option.selected = valor === horarioSeleccionado;
+      select.appendChild(option);
+    });
+  } else {
+    // Resto de días: solo turno fijo, no se elige
+    select.disabled = true;
+    if (ayuda) ayuda.textContent = 'Solo los sábados se puede elegir horario. Este día es turno día (10:00-17:00).';
+
     const option = document.createElement('option');
-    option.value = valor;
-    option.textContent = ocupadoPorOtro ? `${texto} — OCUPADO` : texto;
-    option.disabled = ocupadoPorOtro;
-    option.selected = valor === horarioSeleccionado;
+    option.value = HORARIO_FIJO;
+    option.textContent = HORARIOS[HORARIO_FIJO];
+    option.selected = true;
     select.appendChild(option);
-  });
+  }
 }
 
 function abrirModalNueva(fecha = '', horario = '') {
@@ -347,7 +386,11 @@ function abrirModalNueva(fecha = '', horario = '') {
   document.getElementById('senaPagada').checked = false;
   document.getElementById('notas').value = '';
 
-  actualizarOpcionesHorario(fecha, horario || horariosDisponibles(fecha)[0] || '');
+  const horarioFinal = esSabado(fecha)
+    ? (horario || horariosDisponibles(fecha)[0] || '')
+    : HORARIO_FIJO;
+
+  actualizarOpcionesHorario(fecha, horarioFinal);
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
   document.getElementById('nombre').focus();
@@ -371,7 +414,7 @@ function abrirModalEditar(id) {
   document.getElementById('notas').value = reserva.notas || '';
 
   actualizarOpcionesHorario(reserva.fecha || '', reserva.horario || '');
-  document.getElementById('horario').value = reserva.horario || '';
+  document.getElementById('horario').value = reserva.horario || HORARIO_FIJO;
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
 }
@@ -400,14 +443,20 @@ async function guardarReserva() {
   const nombre = document.getElementById('nombre').value.trim();
   const telefono = document.getElementById('telefono').value.trim();
   const fecha = document.getElementById('fecha').value;
-  const horario = document.getElementById('horario').value;
+  let horario = document.getElementById('horario').value;
 
   if (!nombre) return alert('El nombre es obligatorio.');
   if (!fecha) return alert('La fecha es obligatoria.');
   if (!diaPermitido(fecha)) return alert(`No se pueden crear reservas los ${nombreDia(fecha)}.`);
+
+  // Forzar horario fijo si no es sábado
+  if (!esSabado(fecha)) {
+    horario = HORARIO_FIJO;
+  }
+
   if (!horario || !HORARIOS[horario]) return alert('Elegí un horario de reserva.');
   if (horarioOcupado(fecha, horario, editandoId)) {
-    return alert('Ese turno ya está reservado. Elegí el otro horario.');
+    return alert('Ese turno ya está reservado.');
   }
 
   const total = Number(document.getElementById('total').value) || 0;
@@ -436,7 +485,7 @@ async function guardarReserva() {
   if (error) {
     console.error('Error guardando:', error);
     if (error.code === '23505') {
-      alert('Ese turno ya está reservado para esa fecha. Elegí el otro turno.');
+      alert('Ese turno ya está reservado para esa fecha.');
     } else {
       alert(`Error al guardar:\n\n${error.message}`);
     }
@@ -446,8 +495,6 @@ async function guardarReserva() {
   const eraEdicion = !!editandoId;
   cerrarModal();
   mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
-
-  // Recarga completa (calendario + lista de la derecha)
   await cargarReservas();
 }
 
