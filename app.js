@@ -1,7 +1,26 @@
-if (!Auth.estaAutenticado()) { window.location.replace('login.html'); } else {
+/* =========================================================
+   QUINTA MEWEN - RESERVAS
+   Dos turnos independientes por día (todos los días de la semana).
+   IMPORTANTE: la tabla existente usa la columna "Fecha" (F mayúscula).
+========================================================= */
+
+if (!Auth.estaAutenticado()) {
+  window.location.replace('login.html');
+} else {
 
 const SUPABASE_URL = 'https://vebqlbcfjxnpryjdgfvq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xN-Z3i_sUAyB15QmoM67iw_y3Xisvqv';
+
+const DB_DATE_COLUMN = 'Fecha';
+
+const HORARIOS = {
+  '10:00-17:00': '☀️ Día — 10:00 a 17:00',
+  '22:00-05:00': '🌙 Noche — 22:00 a 05:00'
+};
+
+// Todos los días de la semana habilitados
+const DIAS_PERMITIDOS = [0, 1, 2, 3, 4, 5, 6]; // domingo a sábado
+const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 let supabaseClient = null;
 let reservas = [];
@@ -9,43 +28,64 @@ let mesActual = new Date().getMonth();
 let anioActual = new Date().getFullYear();
 let editandoId = null;
 
-const HORARIOS = {
-  '10:00-17:00': '10:00 a 17:00',
-  '22:00-05:00': '22:00 a 05:00'
-};
-
-const DIAS_PERMITIDOS = [5, 6, 0]; // viernes, sábado, domingo (JS: dom=0)
-
-const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
 function initSupabase() {
   const alerta = document.getElementById('alertaConfig');
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    alerta.classList.remove('hidden');
-    alerta.innerHTML = '⚠️ Falta configurar Supabase.';
-    return false;
-  }
   try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return true;
   } catch (error) {
-    console.error('Error inicializando Supabase:', error);
+    console.error(error);
     alerta.classList.remove('hidden');
     alerta.innerHTML = '⚠️ Error inicializando Supabase. Revisá la consola.';
     return false;
   }
 }
 
+/** Normaliza la fecha a YYYY-MM-DD (sin hora) */
+function normalizarFechaStr(valor) {
+  if (!valor) return '';
+  const str = String(valor).trim();
+  // Si viene con hora (ISO), nos quedamos solo con la parte de fecha
+  if (str.includes('T')) return str.split('T')[0];
+  // Si ya es YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // Último recurso: intentar parsear
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function normalizarReserva(r) {
+  return {
+    ...r,
+    fecha: normalizarFechaStr(r[DB_DATE_COLUMN] || r.fecha || ''),
+    horario: r.horario || ''
+  };
+}
+
+function escaparHTML(texto) {
+  if (texto === null || texto === undefined) return '';
+  return String(texto)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
+}
+
 function formatearFecha(fechaStr) {
   if (!fechaStr) return '';
-  const partes = fechaStr.split('-');
+  const partes = String(fechaStr).split('-');
   if (partes.length !== 3) return fechaStr;
-  const [y,m,d] = partes;
-  return `${d}/${m}/${y}`;
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
 function formatearMoneda(numero) {
-  return new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:0 }).format(numero || 0);
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0
+  }).format(numero || 0);
 }
 
 function mostrarToast(mensaje) {
@@ -56,13 +96,12 @@ function mostrarToast(mensaje) {
 }
 
 function fechaLocalDesdeInput(fechaStr) {
-  const [y,m,d] = fechaStr.split('-').map(Number);
+  const [y, m, d] = fechaStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
 function diaPermitido(fechaStr) {
-  if (!fechaStr) return false;
-  return DIAS_PERMITIDOS.includes(fechaLocalDesdeInput(fechaStr).getDay());
+  return !!fechaStr && DIAS_PERMITIDOS.includes(fechaLocalDesdeInput(fechaStr).getDay());
 }
 
 function nombreDia(fechaStr) {
@@ -74,8 +113,16 @@ function reservasDeFecha(fecha) {
   return reservas.filter(r => r.fecha === fecha);
 }
 
+function buscarReservaPorId(id) {
+  return reservas.find(r => String(r.id) === String(id));
+}
+
 function horarioOcupado(fecha, horario, ignorarId = null) {
-  return reservas.some(r => r.fecha === fecha && r.horario === horario && String(r.id) !== String(ignorarId));
+  return reservas.some(r =>
+    r.fecha === fecha &&
+    r.horario === horario &&
+    String(r.id) !== String(ignorarId)
+  );
 }
 
 function horariosDisponibles(fecha, ignorarId = null) {
@@ -83,17 +130,33 @@ function horariosDisponibles(fecha, ignorarId = null) {
   return Object.keys(HORARIOS).filter(h => !horarioOcupado(fecha, h, ignorarId));
 }
 
+function hoyStr() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+}
+
 async function cargarReservas() {
   if (!supabaseClient) return;
-  const { data, error } = await supabaseClient.from('reservas').select('*').order('fecha', { ascending:true });
+
+  const { data, error } = await supabaseClient
+    .from('reservas')
+    .select('*')
+    .order(DB_DATE_COLUMN, { ascending: true });
+
   if (error) {
     console.error('Error cargando reservas:', error);
-    document.getElementById('listaReservas').innerHTML = `<div class="empty-state"><strong>Error cargando reservas</strong><br><br>${escaparHTML(error.message)}</div>`;
+    document.getElementById('listaReservas').innerHTML = `
+      <div class="empty-state">
+        <strong>⚠️ Error cargando reservas</strong><br><br>
+        ${escaparHTML(error.message)}
+      </div>`;
     reservas = [];
     renderCalendario();
+    renderLista();
     return;
   }
-  reservas = data || [];
+
+  reservas = (data || []).map(normalizarReserva);
   renderCalendario();
   renderLista();
 }
@@ -107,57 +170,56 @@ function renderCalendario() {
   let diaSemana = primerDia.getDay();
   diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
   const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
-  const hoy = new Date();
-  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const hoy = hoyStr();
 
-  for (let i=0; i<diaSemana; i++) {
+  for (let i = 0; i < diaSemana; i++) {
     const empty = document.createElement('div');
     empty.className = 'day empty';
     grid.appendChild(empty);
   }
 
-  for (let d=1; d<=diasEnMes; d++) {
-    const fecha = `${anioActual}-${String(mesActual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fecha = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const permitido = diaPermitido(fecha);
+    const reservasDia = reservasDeFecha(fecha);
+
     const div = document.createElement('div');
     div.className = 'day';
+    if (fecha === hoy) div.classList.add('today');
+    if (!permitido) div.classList.add('day-disabled');
+
     const numero = document.createElement('span');
+    numero.className = 'day-number';
     numero.textContent = d;
     div.appendChild(numero);
 
-    if (fecha === hoyStr) div.classList.add('today');
-
-    const fechaObj = fechaLocalDesdeInput(fecha);
-    const permitido = DIAS_PERMITIDOS.includes(fechaObj.getDay());
-    if (!permitido) div.classList.add('day-disabled');
-
-    const reservasDia = reservasDeFecha(fecha);
-    const turnoDia = reservasDia.find(r => r.horario === '10:00-17:00');
-    const turnoNoche = reservasDia.find(r => r.horario === '22:00-05:00');
-
-    if (turnoDia || turnoNoche) {
+    if (permitido) {
       const slots = document.createElement('div');
       slots.className = 'day-slots';
-      if (turnoDia) slots.innerHTML += `<span class="day-slot ocupado">☀️ 10-17</span>`;
-      else if (permitido) slots.innerHTML += `<span class="day-slot libre">☀️ 10-17</span>`;
-      if (turnoNoche) slots.innerHTML += `<span class="day-slot ocupado">🌙 22-05</span>`;
-      else if (permitido) slots.innerHTML += `<span class="day-slot libre">🌙 22-05</span>`;
-      div.appendChild(slots);
-    } else if (permitido) {
-      const slots = document.createElement('div');
-      slots.className = 'day-slots';
-      slots.innerHTML = `<span class="day-slot libre">☀️ 10-17</span><span class="day-slot libre">🌙 22-05</span>`;
+
+      ['10:00-17:00', '22:00-05:00'].forEach(horario => {
+        const reserva = reservasDia.find(r => r.horario === horario);
+        const slot = document.createElement('button');
+        slot.type = 'button';
+        slot.className = `day-slot ${reserva ? 'ocupado' : 'libre'}`;
+        slot.innerHTML = reserva
+          ? `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small> Reservado</small>`
+          : `${horario === '10:00-17:00' ? '☀️' : '🌙'} ${horario === '10:00-17:00' ? '10-17' : '22-05'}<small> Disponible</small>`;
+
+        slot.addEventListener('click', e => {
+          e.stopPropagation();
+          if (reserva) abrirModalEditar(reserva.id);
+          else abrirModalNueva(fecha, horario);
+        });
+
+        slots.appendChild(slot);
+      });
       div.appendChild(slots);
     }
 
     div.addEventListener('click', () => {
       if (!permitido) {
-        mostrarToast(`Solo se puede reservar viernes, sábado y domingo.`);
-        return;
-      }
-      const disponibles = horariosDisponibles(fecha);
-      if (disponibles.length === 0) {
-        if (reservasDia.length) abrirModalEditar(reservasDia[0].id);
-        else mostrarToast('Los dos horarios de este día ya están ocupados.');
+        mostrarToast('Este día no está habilitado para reservas.');
         return;
       }
       abrirModalNueva(fecha);
@@ -176,35 +238,43 @@ function cambiarMes(direccion) {
 
 function renderLista() {
   const contenedor = document.getElementById('listaReservas');
-  const hoy = new Date();
-  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
-  const visibles = reservas.filter(r => r.fecha >= hoyStr).sort((a,b) => a.fecha.localeCompare(b.fecha) || String(a.horario || '').localeCompare(String(b.horario || '')));
+  const hoy = hoyStr();
+
+  const visibles = reservas
+    .filter(r => r.fecha && r.fecha >= hoy)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.horario).localeCompare(String(b.horario)));
+
   document.getElementById('contadorReservas').textContent = `(${visibles.length})`;
+
   if (!visibles.length) {
     contenedor.innerHTML = '<div class="empty-state">No hay reservas próximas.</div>';
     return;
   }
+
   contenedor.innerHTML = visibles.map(reserva => {
     const saldo = calcularSaldoReserva(reserva);
-    let badge = '';
+    let badge;
     if (reserva.sena_pagada || Number(reserva.sena) === 0) {
-      badge = saldo <= 0 ? '<span class="badge badge-ok">Pagado</span>' : `<span class="badge badge-pendiente">Falta ${formatearMoneda(saldo)}</span>`;
+      badge = saldo <= 0
+        ? '<span class="badge badge-ok">Pagado</span>'
+        : `<span class="badge badge-pendiente">Falta ${formatearMoneda(saldo)}</span>`;
     } else {
       badge = '<span class="badge badge-parcial">Seña pendiente</span>';
     }
-    const horario = HORARIOS[reserva.horario] || 'Horario no definido';
-    return `<div class="reserva-item" data-id="${reserva.id}">
-      <div class="nombre">${escaparHTML(reserva.nombre)}</div>
-      <div class="fechas">${formatearFecha(reserva.fecha)} · <strong>${escaparHTML(horario)}</strong></div>
-      <div class="montos"><span>Total: ${formatearMoneda(reserva.total)}</span>${badge}</div>
-    </div>`;
-  }).join('');
-  contenedor.querySelectorAll('.reserva-item').forEach(el => el.addEventListener('click', () => abrirModalEditar(el.dataset.id)));
-}
 
-function escaparHTML(texto) {
-  if (texto === null || texto === undefined) return '';
-  return String(texto).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+    const horarioTexto = HORARIOS[reserva.horario] || `Horario: ${reserva.horario || 'No definido'}`;
+    const icono = reserva.horario === '22:00-05:00' ? '🌙' : '☀️';
+
+    return `<button type="button" class="reserva-item" data-id="${escaparHTML(reserva.id)}">
+      <div class="nombre">${escaparHTML(reserva.nombre || 'Sin nombre')}</div>
+      <div class="fechas">${formatearFecha(reserva.fecha)} · <strong>${icono} ${escaparHTML(horarioTexto.replace(/^☀️ |^🌙 /, ''))}</strong></div>
+      <div class="montos"><span>Total: ${formatearMoneda(reserva.total)}</span>${badge}</div>
+    </button>`;
+  }).join('');
+
+  contenedor.querySelectorAll('.reserva-item').forEach(el => {
+    el.addEventListener('click', () => abrirModalEditar(el.dataset.id));
+  });
 }
 
 function calcularSaldoReserva(reserva) {
@@ -216,24 +286,28 @@ function calcularSaldoReserva(reserva) {
 function actualizarOpcionesHorario(fecha, horarioSeleccionado = '') {
   const select = document.getElementById('horario');
   if (!select) return;
+
   select.innerHTML = '<option value="">Seleccioná un horario</option>';
-  if (!diaPermitido(fecha)) {
+
+  if (!fecha || !diaPermitido(fecha)) {
     select.disabled = true;
     return;
   }
+
   select.disabled = false;
+
   Object.entries(HORARIOS).forEach(([valor, texto]) => {
-    const ocupado = horarioOcupado(fecha, valor, editandoId);
+    const ocupadoPorOtro = horarioOcupado(fecha, valor, editandoId);
     const option = document.createElement('option');
     option.value = valor;
-    option.textContent = ocupado ? `${texto} — OCUPADO` : texto;
-    option.disabled = ocupado;
-    if (valor === horarioSeleccionado) option.selected = true;
+    option.textContent = ocupadoPorOtro ? `${texto} — OCUPADO` : texto;
+    option.disabled = ocupadoPorOtro;
+    option.selected = valor === horarioSeleccionado;
     select.appendChild(option);
   });
 }
 
-function abrirModalNueva(fecha = null) {
+function abrirModalNueva(fecha = '', horario = '') {
   editandoId = null;
   document.getElementById('modalTitulo').textContent = 'Nueva reserva';
   document.getElementById('btnEliminar').style.display = 'none';
@@ -241,21 +315,22 @@ function abrirModalNueva(fecha = null) {
   document.getElementById('nombre').value = '';
   document.getElementById('telefono').value = '';
   document.getElementById('email').value = '';
-  document.getElementById('fecha').value = fecha || '';
+  document.getElementById('fecha').value = fecha;
   document.getElementById('total').value = '';
   document.getElementById('sena').value = '';
   document.getElementById('senaPagada').checked = false;
   document.getElementById('notas').value = '';
-  actualizarOpcionesHorario(fecha || '');
-  document.getElementById('horario').value = horariosDisponibles(fecha || '')[0] || '';
+
+  actualizarOpcionesHorario(fecha, horario || horariosDisponibles(fecha)[0] || '');
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
   document.getElementById('nombre').focus();
 }
 
 function abrirModalEditar(id) {
-  const reserva = reservas.find(item => String(item.id) === String(id));
+  const reserva = buscarReservaPorId(id);
   if (!reserva) return;
+
   editandoId = id;
   document.getElementById('modalTitulo').textContent = 'Editar reserva';
   document.getElementById('btnEliminar').style.display = 'inline-block';
@@ -268,44 +343,56 @@ function abrirModalEditar(id) {
   document.getElementById('sena').value = reserva.sena || '';
   document.getElementById('senaPagada').checked = !!reserva.sena_pagada;
   document.getElementById('notas').value = reserva.notas || '';
+
   actualizarOpcionesHorario(reserva.fecha || '', reserva.horario || '');
+  document.getElementById('horario').value = reserva.horario || '';
   calcularSaldo();
   document.getElementById('modal').classList.add('active');
 }
 
-function cerrarModal() { document.getElementById('modal').classList.remove('active'); }
+function cerrarModal() {
+  document.getElementById('modal').classList.remove('active');
+  editandoId = null;
+}
 
 function calcularSaldo() {
   const total = Number(document.getElementById('total').value) || 0;
   const sena = Number(document.getElementById('sena').value) || 0;
   const pagada = document.getElementById('senaPagada').checked;
-  let texto = pagada ? formatearMoneda(Math.max(0,total-sena)) : formatearMoneda(total);
-  if (pagada && Math.max(0,total-sena) === 0 && total > 0) texto += ' (¡todo pago!)';
+  let texto = pagada ? formatearMoneda(Math.max(0, total - sena)) : formatearMoneda(total);
+  if (pagada && Math.max(0, total - sena) === 0 && total > 0) texto += ' (¡todo pago!)';
   else if (!pagada && sena > 0) texto += ` (incluye seña de ${formatearMoneda(sena)})`;
   document.getElementById('saldoTexto').textContent = texto;
 }
 
 async function guardarReserva() {
-  if (!supabaseClient) { alert('Supabase no está conectado.'); return; }
+  if (!supabaseClient) {
+    alert('Supabase no está conectado.');
+    return;
+  }
+
   const nombre = document.getElementById('nombre').value.trim();
   const telefono = document.getElementById('telefono').value.trim();
   const fecha = document.getElementById('fecha').value;
   const horario = document.getElementById('horario').value;
-  if (!nombre) { alert('El nombre es obligatorio.'); return; }
-  if (!fecha) { alert('La fecha es obligatoria.'); return; }
-  if (!diaPermitido(fecha)) { alert(`No se pueden crear reservas los ${nombreDia(fecha)}. Solo viernes, sábado y domingo.`); return; }
-  if (!horario || !HORARIOS[horario]) { alert('Elegí un horario de reserva.'); return; }
-  if (horarioOcupado(fecha, horario, editandoId)) { alert('Ese horario ya está reservado para esa fecha. Elegí el otro turno.'); return; }
+
+  if (!nombre) return alert('El nombre es obligatorio.');
+  if (!fecha) return alert('La fecha es obligatoria.');
+  if (!diaPermitido(fecha)) return alert(`No se pueden crear reservas los ${nombreDia(fecha)}.`);
+  if (!horario || !HORARIOS[horario]) return alert('Elegí un horario de reserva.');
+  if (horarioOcupado(fecha, horario, editandoId)) {
+    return alert('Ese turno ya está reservado. Elegí el otro horario.');
+  }
 
   const total = Number(document.getElementById('total').value) || 0;
   const sena = Number(document.getElementById('sena').value) || 0;
-  if (sena > total) { alert('La seña no puede ser mayor que el total.'); return; }
+  if (sena > total) return alert('La seña no puede ser mayor que el total.');
 
   const data = {
     nombre,
     telefono,
     email: document.getElementById('email').value.trim() || null,
-    fecha,
+    [DB_DATE_COLUMN]: fecha,
     horario,
     total,
     sena,
@@ -315,33 +402,44 @@ async function guardarReserva() {
 
   let error;
   if (editandoId) {
-    const resultado = await supabaseClient.from('reservas').update(data).eq('id', editandoId);
-    error = resultado.error;
+    ({ error } = await supabaseClient.from('reservas').update(data).eq('id', editandoId));
   } else {
-    const resultado = await supabaseClient.from('reservas').insert([data]);
-    error = resultado.error;
+    ({ error } = await supabaseClient.from('reservas').insert([data]));
   }
+
   if (error) {
     console.error('Error guardando:', error);
-    if (error.code === '23505') alert('Ese turno ya fue reservado para esa fecha. Elegí el otro horario.');
-    else alert('Error al guardar:\n\n' + error.message);
+    if (error.code === '23505') {
+      alert('Ese turno ya está reservado para esa fecha. Elegí el otro turno.');
+    } else {
+      alert(`Error al guardar:\n\n${error.message}`);
+    }
     return;
   }
-  await cargarReservas();
+
+  const eraEdicion = !!editandoId;
+  await cargarReservas();   // ← vuelve a cargar y actualiza calendario + lista derecha
   cerrarModal();
-  mostrarToast(editandoId ? 'Reserva actualizada' : 'Reserva creada');
+  mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
 }
 
 async function eliminarReserva() {
   if (!editandoId || !supabaseClient) return;
-  if (!confirm('¿Seguro que querés eliminar esta reserva?')) return;
+  if (!confirm('¿Seguro que querés eliminar esta reserva? El turno quedará nuevamente disponible.')) return;
+
   const { error } = await supabaseClient.from('reservas').delete().eq('id', editandoId);
-  if (error) { alert('Error al eliminar:\n\n' + error.message); return; }
+  if (error) {
+    console.error(error);
+    alert(`Error al eliminar:\n\n${error.message}`);
+    return;
+  }
+
   await cargarReservas();
   cerrarModal();
-  mostrarToast('Reserva eliminada');
+  mostrarToast('Reserva eliminada. El turno quedó disponible.');
 }
 
+// Eventos
 document.getElementById('btnNuevaReserva').addEventListener('click', () => abrirModalNueva());
 document.getElementById('btnMesAnterior').addEventListener('click', () => cambiarMes(-1));
 document.getElementById('btnMesSiguiente').addEventListener('click', () => cambiarMes(1));
@@ -352,23 +450,24 @@ document.getElementById('btnGuardar').addEventListener('click', guardarReserva);
 document.getElementById('total').addEventListener('input', calcularSaldo);
 document.getElementById('sena').addEventListener('input', calcularSaldo);
 document.getElementById('senaPagada').addEventListener('change', calcularSaldo);
+
 document.getElementById('fecha').addEventListener('change', e => {
   const fecha = e.target.value;
-  if (fecha && !diaPermitido(fecha)) {
-    alert(`La fecha seleccionada es ${nombreDia(fecha)}. Solo se permiten viernes, sábado y domingo.`);
-    e.target.value = '';
-    actualizarOpcionesHorario('');
-    return;
-  }
-  actualizarOpcionesHorario(fecha);
-  const disponibles = horariosDisponibles(fecha, editandoId);
-  document.getElementById('horario').value = disponibles[0] || (editandoId ? (reservas.find(r => String(r.id)===String(editandoId))?.horario || '') : '');
+  const reservaActual = editandoId ? buscarReservaPorId(editandoId) : null;
+  actualizarOpcionesHorario(fecha, reservaActual && reservaActual.fecha === fecha ? reservaActual.horario : '');
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
-document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') cerrarModal(); });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrarModal();
+});
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') cerrarModal();
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
   renderCalendario();
   if (initSupabase()) await cargarReservas();
 });
+
 }
