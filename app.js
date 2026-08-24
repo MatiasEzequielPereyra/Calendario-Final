@@ -2,8 +2,8 @@
    QUINTA MEWEN - RESERVAS
    - Todos los días habilitados
    - Solo los sábados se elige horario (día/noche)
-   - Resto de días: turno fijo día (10:00-17:00)
-   - Calendario con puntos verde/rojo
+   - Sábados: dos puntos independientes
+   - Resto de días: un solo punto
 ========================================================= */
 
 if (!Auth.estaAutenticado()) {
@@ -171,6 +171,8 @@ async function cargarReservas() {
   }
 
   reservas = (data || []).map(normalizarReserva);
+  
+  // Forzar actualización de ambas vistas
   renderCalendario();
   renderLista();
 }
@@ -203,34 +205,64 @@ function renderCalendario() {
     if (fecha === hoy) div.classList.add('today');
     if (!permitido) div.classList.add('day-disabled');
 
+    // Número del día
     const numero = document.createElement('span');
     numero.className = 'day-number';
     numero.textContent = d;
     div.appendChild(numero);
 
     if (permitido) {
-      let estaOcupado = false;
+      const dotsContainer = document.createElement('div');
+      dotsContainer.className = 'day-dots';
 
       if (esSab) {
-        const tieneDia = reservasDia.some(r => r.horario === '10:00-17:00');
-        const tieneNoche = reservasDia.some(r => r.horario === '22:00-05:00');
-        estaOcupado = tieneDia && tieneNoche;
+        // ===== SÁBADO: dos puntos independientes =====
+        const ocupadoDia = reservasDia.some(r => r.horario === '10:00-17:00');
+        const ocupadoNoche = reservasDia.some(r => r.horario === '22:00-05:00');
+
+        // Punto Día
+        const puntoDia = document.createElement('span');
+        puntoDia.className = `day-dot ${ocupadoDia ? 'ocupado' : 'disponible'}`;
+        puntoDia.title = ocupadoDia ? 'Turno Día: Reservado' : 'Turno Día: Disponible';
+        dotsContainer.appendChild(puntoDia);
+
+        // Punto Noche
+        const puntoNoche = document.createElement('span');
+        puntoNoche.className = `day-dot ${ocupadoNoche ? 'ocupado' : 'disponible'}`;
+        puntoNoche.title = ocupadoNoche ? 'Turno Noche: Reservado' : 'Turno Noche: Disponible';
+        dotsContainer.appendChild(puntoNoche);
+
+        div.appendChild(dotsContainer);
+
+        // Click en el día
+        div.addEventListener('click', () => {
+          if (ocupadoDia && ocupadoNoche) {
+            // Ambos ocupados → editar la primera
+            const reserva = reservasDia[0];
+            if (reserva) abrirModalEditar(reserva.id);
+          } else {
+            abrirModalNueva(fecha);
+          }
+        });
+
       } else {
-        estaOcupado = reservasDia.some(r => r.horario === HORARIO_FIJO);
+        // ===== RESTO DE DÍAS: un solo punto =====
+        const estaOcupado = reservasDia.some(r => r.horario === HORARIO_FIJO);
+
+        const punto = document.createElement('span');
+        punto.className = `day-dot ${estaOcupado ? 'ocupado' : 'disponible'}`;
+        dotsContainer.appendChild(punto);
+        div.appendChild(dotsContainer);
+
+        div.addEventListener('click', () => {
+          if (estaOcupado) {
+            const reserva = reservasDia[0];
+            if (reserva) abrirModalEditar(reserva.id);
+          } else {
+            abrirModalNueva(fecha);
+          }
+        });
       }
-
-      const punto = document.createElement('span');
-      punto.className = `day-dot ${estaOcupado ? 'ocupado' : 'disponible'}`;
-      div.appendChild(punto);
-
-      div.addEventListener('click', () => {
-        if (estaOcupado) {
-          const reserva = reservasDia[0];
-          if (reserva) abrirModalEditar(reserva.id);
-        } else {
-          abrirModalNueva(fecha);
-        }
-      });
     } else {
       div.addEventListener('click', () => {
         mostrarToast('Este día no está habilitado.');
@@ -250,6 +282,8 @@ function cambiarMes(direccion) {
 
 function renderLista() {
   const contenedor = document.getElementById('listaReservas');
+  if (!contenedor) return;
+
   const hoy = parseFechaLocal(hoyStr());
 
   const visibles = reservas
@@ -265,7 +299,8 @@ function renderLista() {
       return String(a.horario || '').localeCompare(String(b.horario || ''));
     });
 
-  document.getElementById('contadorReservas').textContent = `(${visibles.length})`;
+  const contador = document.getElementById('contadorReservas');
+  if (contador) contador.textContent = `(${visibles.length})`;
 
   if (!visibles.length) {
     contenedor.innerHTML = '<div class="empty-state">No hay reservas próximas.</div>';
@@ -299,6 +334,7 @@ function renderLista() {
     </button>`;
   }).join('');
 
+  // Volver a asignar los eventos de click
   contenedor.querySelectorAll('.reserva-item').forEach(el => {
     el.addEventListener('click', () => abrirModalEditar(el.dataset.id));
   });
@@ -470,6 +506,8 @@ async function guardarReserva() {
   const eraEdicion = !!editandoId;
   cerrarModal();
   mostrarToast(eraEdicion ? 'Reserva actualizada' : 'Reserva creada correctamente');
+
+  // Recarga forzada de todo
   await cargarReservas();
 }
 
