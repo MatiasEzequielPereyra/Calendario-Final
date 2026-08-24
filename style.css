@@ -69,6 +69,43 @@ button {
   background: white;
   color: var(--primary);
 }
+/* Botón Eliminar más grande y fácil de tocar */
+#btnEliminar {
+  min-height: 48px;
+  padding: 0.9rem 1.4rem !important;
+  font-size: 1rem !important;
+  font-weight: 600;
+  border-radius: 12px;
+  min-width: 120px;
+}
+
+@media (max-width: 600px) {
+  #btnEliminar {
+    width: 100%;
+    min-height: 52px;
+    font-size: 1.05rem !important;
+    order: -1; /* lo pone arriba en el celular */
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 0.7rem;
+  }
+
+  .footer-right {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.6rem;
+  }
+
+  .btn-success,
+  .btn-cancel {
+    width: 100%;
+    min-height: 50px;
+    font-size: 1rem;
+  }
+}
 
 .btn-logout {
   background: rgba(255,255,255,0.15);
