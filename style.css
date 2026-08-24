@@ -1116,3 +1116,125 @@ main {
 .day-slot.libre { background:#dcfce7; color:#166534; }
 .form-help { display:block; margin-top:6px; font-size:12px; color:#6b7280; }
 select#horario { width:100%; }
+/* =========================================================
+   ADAPTACIÓN MÓVIL
+========================================================= */
+
+@media (max-width: 900px) {
+  main {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1.2rem;
+  }
+
+  header {
+    padding: 1rem;
+  }
+
+  header h1 {
+    font-size: 1.15rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  /* Calendario más usable en celular */
+  .day {
+    aspect-ratio: auto;
+    min-height: 72px;
+    padding: 4px 2px;
+  }
+
+  .day-number {
+    font-size: 0.85rem;
+  }
+
+  .day-slots {
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .day-slot {
+    font-size: 9px;
+    padding: 4px 2px;
+    border-radius: 6px;
+  }
+
+  .day-slot small {
+    font-size: 8px;
+  }
+
+  /* Lista de reservas */
+  .reservas-list {
+    max-height: 420px;
+  }
+
+  .reserva-item {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .btn-primary {
+    width: 100%;
+  }
+
+  .calendar-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .weekdays {
+    font-size: 0.7rem;
+  }
+
+  .day {
+    min-height: 68px;
+  }
+
+  .day-slot {
+    font-size: 8.5px;
+    padding: 3px 1px;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 0 0.5rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .footer-right {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .btn-success,
+  .btn-cancel,
+  .btn-danger {
+    width: 100%;
+  }
+}
