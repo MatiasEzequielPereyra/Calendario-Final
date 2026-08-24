@@ -4,8 +4,8 @@
    Para seguridad real, usar Supabase Auth + RLS.
 ========================================================= */
 
-const AUTH_USER = 'quintaMewen';
-const AUTH_PASSWORD = 'Quinta123.!';
+const AUTH_USER = 'quintaMewen' 'admin';
+const AUTH_PASSWORD = 'Quinta123.!''admin';
 const AUTH_KEY = 'quinta_mewen_auth';
 
 const Auth = {
