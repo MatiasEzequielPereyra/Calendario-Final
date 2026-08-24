@@ -1,8 +1,3 @@
-/* =========================================================
-   AUTENTICACION - Quinta MeWen
-   Usa localStorage → queda guardado en el teléfono
-========================================================= */
-
 const AUTH_USER = 'quintaMewen';
 const AUTH_PASSWORD = 'Quinta123.!';
 const AUTH_KEY = 'quinta_mewen_auth';
@@ -15,20 +10,16 @@ const Auth = {
     }
     return false;
   },
-
   estaAutenticado() {
     return localStorage.getItem(AUTH_KEY) === '1';
   },
-
   logout() {
     localStorage.removeItem(AUTH_KEY);
     window.location.href = 'login.html';
   }
 };
 
-// Redirección si no está logueado
 if (
-  !window.location.pathname.endsWith('/login.html') &&
   !window.location.pathname.endsWith('login.html') &&
   !Auth.estaAutenticado()
 ) {
@@ -36,8 +27,6 @@ if (
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const btnLogout = document.getElementById('btnLogout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', () => Auth.logout());
-  }
+  const btn = document.getElementById('btnLogout');
+  if (btn) btn.addEventListener('click', () => Auth.logout());
 });
